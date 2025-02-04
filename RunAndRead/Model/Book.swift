@@ -10,9 +10,9 @@ import AVFAudio
 
 
 
-struct Bookmark: Codable {
+struct Bookmark: Codable  {
     let voiceRate: Float
-    let position: Float
+    let position: Int
 }
 
 class Book: ObservableObject, Codable, Identifiable, Hashable {
@@ -30,7 +30,7 @@ class Book: ObservableObject, Codable, Identifiable, Hashable {
     var voice: AVSpeechSynthesisVoice
     var voiceRate: Float
     var text: [String]
-    var lastPosition: Float
+    var lastPosition: Int //index in the array of all words
     var created: Date
     var bookmarks: [Bookmark]
 
@@ -42,7 +42,7 @@ class Book: ObservableObject, Codable, Identifiable, Hashable {
         voiceIdentifier: String?,
         voiceRate: Float,
         text: [String],
-        lastPosition: Float,
+        lastPosition: Int,
         created: Date = Date(),
         bookmarks: [Bookmark]
     ) {
@@ -86,7 +86,7 @@ class Book: ObservableObject, Codable, Identifiable, Hashable {
         
         voiceRate = try container.decode(Float.self, forKey: .voiceRate)
         text = try container.decode([String].self, forKey: .text)
-        lastPosition = try container.decode(Float.self, forKey: .lastPosition)
+        lastPosition = try container.decode(Int.self, forKey: .lastPosition)
         created = try container.decode(Date.self, forKey: .created)
         do {
             bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
@@ -116,45 +116,25 @@ class Book: ObservableObject, Codable, Identifiable, Hashable {
                     .flatMap { $0.components(separatedBy: .whitespacesAndNewlines) }
                     .filter { !$0.isEmpty }
             
-            
             let totalSeconds = (Double(words.joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.voiceRate)
+            let elapsedSeconds = (Double(words.prefix(self.lastPosition).joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.voiceRate)
             
-            
-            let elapsedSeconds = (Double(words.prefix(Int(self.lastPosition)).joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.voiceRate)
-            
-            
+            nprint("self.lastPosition=>\(self.lastPosition)")
+            nprint("words.count=>\(words.count)")
             DispatchQueue.main.async {
-                completed()
                 self.progressTime = elapsedSeconds.formatSecondsToHMS()
                 self.totalTime = totalSeconds.formatSecondsToHMS()
-                self.isCompleted = Int(self.lastPosition) + 1 >= words.count
+                self.isCompleted = self.lastPosition + 1 >= words.count
+                completed()
             }
         }
     }
     
     // MARK: - Computed Properties
     @Published var isCompleted: Bool = false
-    @Published var totalTime: String = "0:00"
-    @Published var progressTime: String = "0:00"
+    @Published var totalTime: String = "00:00"
+    @Published var progressTime: String = "00:00"
     @Published var isCalculated = false
-    
-    func approximateLastPosition(from elapsedTime: Float) -> Double {
-        let words: [String] = text
-                .flatMap { $0.components(separatedBy: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-        //TODO: check it/test it!!!
-        let estimatedCharacters = Int((Double(elapsedTime) / (Book.SECONDS_PER_CHARACTER * Double(voiceRate))))
-        
-        // Find the approximate word index
-        var characterCount = 0
-        for (index, word) in words.enumerated() {
-            characterCount += word.count + 1 // +1 for spaces
-            if characterCount >= estimatedCharacters {
-                return Double(index)
-            }
-        }
-        return Double(words.count - 1) // Ensure we don't exceed the array bounds
-    }
 }
 
 // MARK: - Time Formatting Extension

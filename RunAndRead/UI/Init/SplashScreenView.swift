@@ -43,6 +43,7 @@ enum AppScreen: Hashable {
 
 struct SplashScreenView: View {
     @EnvironmentObject var bookManager: BookManager
+    @EnvironmentObject var simplePlayer: TextToSpeechSimplePlayer
     @State private var path = NavigationPath()
     @State private var showSplash = true
       
@@ -72,7 +73,7 @@ struct SplashScreenView: View {
                     case .home:
                         HomeScreenView(path: $path)
                     case .newBook:
-                        NewBookDialogView(path: $path)
+                        NewBookDialogView(path: $path, bookManager: bookManager, simplePlayer: simplePlayer)
                     case .player:
                         BookPlayerView(path: $path)
                     case .about:

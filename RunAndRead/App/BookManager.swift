@@ -59,6 +59,16 @@ class BookManager: ObservableObject {
         }
     }
     
+    func reset() {
+        DispatchQueue.main.async {
+            self.currentBook = nil
+            self.currentBookId = nil
+            self.plainTextData = []
+            self.authorData = ""
+            self.titleData = ""
+        }
+    }
+    
     func deleteCurrentBook(onDelete: @escaping () -> Void) {
         DispatchQueue.main.async {
             self.inProgress = true
@@ -182,15 +192,21 @@ class BookManager: ObservableObject {
         .eraseToAnyPublisher()
     }
     
-    func updateLastPosition(for bookId: String, newPosition: Float) {
+    func addABookmark() {
+        if let book = currentBook {
+            book.bookmarks.append(Bookmark(voiceRate: book.voiceRate, position: book.lastPosition))
+        }
+    }
+    
+    func updateLastPosition(for bookId: String, newPosition: Int) {
         currentBook?.lastPosition = newPosition
     }
     
-    func updateLastPositionWith(elapsedTime: Float) {
-        if let book = currentBook {
-            book.lastPosition = Float(book.approximateLastPosition(from: elapsedTime))
-        }
-    }
+//    func updateLastPositionWith(elapsedTime: Float) {
+//        if let book = currentBook {
+//            book.lastPosition = Int(elapsedTime)//book.approximateLastPosition(from: elapsedTime)
+//        }
+//    }
     
     func persist(completion: @escaping (Result<URL, Error>) -> Void) {
         if let b = currentBook {
