@@ -177,7 +177,7 @@ struct BookSettingsView: View {
                 viewModel: BookSettingsViewModel(
                         path: path.projectedValue,
                         bookManager: BookManager(),
-                        simplePlayer: TextToSpeechSimplePlayer()))
+                        simplePlayer: SimpleTTSPlayer()))
     }
 }
 

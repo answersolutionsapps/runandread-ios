@@ -228,6 +228,6 @@ func returnBookManagerForPreview() -> BookManager {
 
         HomeScreenView(path: path.projectedValue, bookManager: BookManager())
                 .environmentObject(returnBookManagerForPreview())
-                .environmentObject(TextToSpeechSimplePlayer())
+                .environmentObject(SimpleTTSPlayer())
     }
 }

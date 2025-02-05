@@ -10,7 +10,7 @@ import SwiftUI
 @main
 struct RunAndReadApp: App {
     private let bookManager = BookManager()
-    private let simplePlayer = TextToSpeechSimplePlayer()
+    private let simplePlayer = SimpleTTSPlayer()
     private let textToSpeechPlayer = TextToSpeechPlayer()
     var body: some Scene {
         WindowGroup {

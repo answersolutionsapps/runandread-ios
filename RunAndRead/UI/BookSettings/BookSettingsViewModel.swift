@@ -24,9 +24,9 @@ class BookSettingsViewModel: ObservableObject {
     @Published var showVoicePicker: Bool = false
 
     private var bookManager: BookManager
-    private var simplePlayer: TextToSpeechSimplePlayer
+    private var simplePlayer: SimpleTTSPlayer
 
-    init(path: Binding<NavigationPath>, bookManager: BookManager, simplePlayer: TextToSpeechSimplePlayer) {
+    init(path: Binding<NavigationPath>, bookManager: BookManager, simplePlayer: SimpleTTSPlayer) {
         self.bookManager = bookManager
         self.simplePlayer = simplePlayer
         _path = path

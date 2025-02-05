@@ -43,7 +43,7 @@ enum AppScreen: Hashable {
 
 struct SplashScreenView: View {
     @EnvironmentObject var bookManager: BookManager
-    @EnvironmentObject var simplePlayer: TextToSpeechSimplePlayer
+    @EnvironmentObject var simplePlayer: SimpleTTSPlayer
     @EnvironmentObject var player: TextToSpeechPlayer
     @State private var path = NavigationPath()
     @State private var showSplash = true
@@ -136,5 +136,5 @@ struct SplashScreenView: View {
 #Preview {
     SplashScreenView()
         .environmentObject(BookManager())
-        .environmentObject(TextToSpeechSimplePlayer())
+        .environmentObject(SimpleTTSPlayer())
 }
