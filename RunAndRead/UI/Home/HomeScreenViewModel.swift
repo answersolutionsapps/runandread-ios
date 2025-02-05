@@ -44,8 +44,6 @@ class HomeScreenViewModel: ObservableObject {
             self.updateFilteredBooks()
         }
     }
-    
-    
 
     func handleFileSelection(fileURL: URL) {
         bookManager.loadText(from: fileURL) { bookFile in
@@ -148,6 +146,10 @@ class HomeScreenViewModel: ObservableObject {
     
     func isLoading() -> Bool {
         return bookManager.inProgress
+    }
+    
+    @MainActor func onShowFilePicker(){
+        showFilePicker = true
     }
 }
 

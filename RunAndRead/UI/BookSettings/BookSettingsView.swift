@@ -10,7 +10,7 @@ import AVFoundation
 
 
 struct BookSettingsView: View {
-    @State var viewModel: BookSettingsViewModel
+    @StateObject var viewModel: BookSettingsViewModel
     @State private var pinCodeText: String = ""
     @FocusState private var textIsFocused: Bool
 

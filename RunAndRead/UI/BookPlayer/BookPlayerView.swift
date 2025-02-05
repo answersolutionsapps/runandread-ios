@@ -2,7 +2,7 @@ import SwiftUI
 import AVFoundation
 
 struct BookPlayerView: View {
-    @State var viewModel: BookPlayerViewModel
+    @StateObject var viewModel: BookPlayerViewModel
 
     var body: some View {
         ZStack {

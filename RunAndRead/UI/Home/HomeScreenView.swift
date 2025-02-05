@@ -62,7 +62,8 @@ struct DocumentPicker: UIViewControllerRepresentable {
 struct HomeScreenView: View {
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var textIsFocused: Bool
-    @State var viewModel: HomeScreenViewModel
+    @StateObject var viewModel: HomeScreenViewModel
+    
 
     var body: some View {
         ZStack {
@@ -161,7 +162,9 @@ struct HomeScreenView: View {
 
     private var addButton: some View {
         Menu {
-            Button(action: { viewModel.showFilePicker = true }) {
+            Button(action: {
+                viewModel.onShowFilePicker()
+            }) {
                 Label("From File", systemImage: "doc")
             }
             Button(action: pasteFromClipboard) {
@@ -200,6 +203,20 @@ struct SearchBar: View {
                 .cornerRadius(0)
                 .padding(.horizontal)
                 .padding(.vertical, 5)
+                .overlay(
+                    HStack {
+                        Spacer() // Push the button to the right
+                        if !text.isEmpty { // Show the clear button only if there's text
+                            Button(action: {
+                                text = "" // Clear the text when button is pressed
+                            }) {
+                                Image(systemName: "x.circle.fill")
+                                    .foregroundColor(.gray)
+                            }
+                            .padding(.trailing, 24)
+                        }
+                    }
+                )
     }
 }
 
