@@ -21,18 +21,18 @@ class BookManager: ObservableObject {
     @Published var currentBookId: String?
     @Published var inProgress = false
     @Published var currentBook: Book?
-    
+
     @Published var plainTextData: [String] = []
     @Published var authorData: String = ""
     @Published var titleData: String = ""
-    
+
     public var openedFilePath: URL? = nil
-    
+
     init() {
         rootDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
         currentBookIdPath = rootDirectory.appendingPathComponent("currentBookId.json")
         libraryFolderPath = rootDirectory.appendingPathComponent("library")
-        
+
         if !fileManager.fileExists(atPath: libraryFolderPath.path) {
             try? fileManager.createDirectory(at: libraryFolderPath, withIntermediateDirectories: true, attributes: nil)
         }
@@ -58,7 +58,7 @@ class BookManager: ObservableObject {
             }
         }
     }
-    
+
     func reset() {
         DispatchQueue.main.async {
             self.currentBook = nil
@@ -68,32 +68,32 @@ class BookManager: ObservableObject {
             self.titleData = ""
         }
     }
-    
+
     func deleteCurrentBook(onDelete: @escaping () -> Void) {
         DispatchQueue.main.async {
             self.inProgress = true
         }
         DispatchQueue.global(qos: .background).async { [self] in
-                do {
-                    if fileManager.fileExists(atPath: self.currentBookIdPath.path) {
-                        try fileManager.removeItem(at: currentBookIdPath)
-                    }
-                } catch {
-                    print("Error deleting current book ID: \(error)")
+            do {
+                if fileManager.fileExists(atPath: self.currentBookIdPath.path) {
+                    try fileManager.removeItem(at: currentBookIdPath)
                 }
-                DispatchQueue.main.async {
-                    self.currentBook = nil
-                    self.currentBookId = nil
-                    self.plainTextData = []
-                    self.authorData = ""
-                    self.titleData = ""
-                    onDelete()
-                    self.inProgress = false
-                }
+            } catch {
+                print("Error deleting current book ID: \(error)")
             }
-       
+            DispatchQueue.main.async {
+                self.currentBook = nil
+                self.currentBookId = nil
+                self.plainTextData = []
+                self.authorData = ""
+                self.titleData = ""
+                onDelete()
+                self.inProgress = false
+            }
+        }
+
     }
-    
+
     private func loadCurrentBookId() -> AnyPublisher<String?, Never> {
         Future { promise in
             do {
@@ -105,10 +105,10 @@ class BookManager: ObservableObject {
                 promise(.success(nil))
             }
         }
-        .receive(on: DispatchQueue.main)
-        .eraseToAnyPublisher()
+                .receive(on: DispatchQueue.main)
+                .eraseToAnyPublisher()
     }
-    
+
     func saveBookToLibrary(book: Book, completion: @escaping (Result<URL, Error>) -> Void) {
         inProgress = true
         DispatchQueue.global(qos: .background).async {
@@ -116,10 +116,10 @@ class BookManager: ObservableObject {
             do {
                 let data = try JSONEncoder().encode(book)
                 try data.write(to: bookFilePath)
-                    DispatchQueue.main.async {
-                        completion(.success(bookFilePath))
-                        self.inProgress = false
-                    }
+                DispatchQueue.main.async {
+                    completion(.success(bookFilePath))
+                    self.inProgress = false
+                }
             } catch {
                 DispatchQueue.main.async {
                     completion(.failure(error))
@@ -128,7 +128,7 @@ class BookManager: ObservableObject {
             }
         }
     }
-    
+
     func deleteBookFromLibrary(book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
         inProgress = true
         DispatchQueue.global(qos: .background).async {
@@ -152,7 +152,7 @@ class BookManager: ObservableObject {
         }
     }
 
-    
+
     private func loadBookFromLibrary(id: String) -> AnyPublisher<Book?, Never> {
         Future { promise in
             let bookFilePath = self.libraryFolderPath.appendingPathComponent("\(id).json")
@@ -160,22 +160,22 @@ class BookManager: ObservableObject {
                 let data = try Data(contentsOf: bookFilePath)
                 let decoder = JSONDecoder()
                 let book = try decoder.decode(Book.self, from: data)
-                    promise(.success(book))
-                } catch {
-                    print("Error loading book: \(error)")
-                    promise(.success(nil))
-                }
+                promise(.success(book))
+            } catch {
+                print("Error loading book: \(error)")
+                promise(.success(nil))
             }
-            .receive(on: DispatchQueue.main)
-            .eraseToAnyPublisher()
         }
-    
+                .receive(on: DispatchQueue.main)
+                .eraseToAnyPublisher()
+    }
+
     private func loadLibrary() -> AnyPublisher<[Book], Never> {
         Future { promise in
             do {
                 let fileURLs = try self.fileManager.contentsOfDirectory(at: self.libraryFolderPath, includingPropertiesForKeys: nil)
                 var books: [Book] = []
-                
+
                 for fileURL in fileURLs {
                     let data = try Data(contentsOf: fileURL)
                     if let book = try? JSONDecoder().decode(Book.self, from: data) {
@@ -188,64 +188,62 @@ class BookManager: ObservableObject {
                 promise(.success([]))
             }
         }
-        .receive(on: DispatchQueue.main)
-        .eraseToAnyPublisher()
+                .receive(on: DispatchQueue.main)
+                .eraseToAnyPublisher()
     }
-    
+
     func addABookmark() {
         if let book = currentBook {
             book.bookmarks.append(Bookmark(voiceRate: book.voiceRate, position: book.lastPosition))
         }
     }
-    
+
     func updateLastPosition(for bookId: String, newPosition: Int) {
         currentBook?.lastPosition = newPosition
     }
-    
-//    func updateLastPositionWith(elapsedTime: Float) {
-//        if let book = currentBook {
-//            book.lastPosition = Int(elapsedTime)//book.approximateLastPosition(from: elapsedTime)
-//        }
-//    }
-    
+
     func persist(completion: @escaping (Result<URL, Error>) -> Void) {
         if let b = currentBook {
             saveBookToLibrary(book: b, completion: completion)
         }
     }
-    
+
     func updateBookMetadata(for bookId: String, title: String, author: String, language: Locale, voice: AVSpeechSynthesisVoice, voiceRate: Float, onSave: @escaping () -> Void) {
-        guard let index = library.firstIndex(where: { $0.id == bookId }) else { return }
+        guard let index = library.firstIndex(where: { $0.id == bookId }) else {
+            return
+        }
         library[index].title = title
         library[index].author = author
         library[index].language = language
         library[index].voice = voice
         library[index].voiceRate = voiceRate
-        saveBookToLibrary(book: library[index]) { _ in onSave() }
+        saveBookToLibrary(book: library[index]) { _ in
+            onSave()
+        }
     }
-    
+
     private var cancellables = Set<AnyCancellable>()
-    
-    func loadBooks() {
+
+    func loadBooks(onLoaded: @escaping () -> Void) {
         inProgress = true
         self.library.removeAll()
         DispatchQueue.global(qos: .background).async {
             self.loadLibrary()
-                .sink { books in
-                    DispatchQueue.main.async {
-                        self.library = books.sorted(by: { $0.created > $1.created })
-                        if self.library.isEmpty {
-                            self.loadDefaultLibrary()
-                        } else {
-                            self.inProgress = false
+                    .sink { books in
+                        DispatchQueue.main.async {
+                            self.library = books.sorted(by: { $0.created > $1.created })
+                            if self.library.isEmpty {
+                                self.loadDefaultLibrary()
+                            } else {
+                                self.inProgress = false
+                            }
+                            onLoaded()
                         }
                     }
-                }
-                .store(in: &self.cancellables)
+                    .store(in: &self.cancellables)
         }
-        
     }
-    
+
     func loadDefaultLibrary() {
         self.libraryDefault.removeAll()
         DispatchQueue.global(qos: .background).async {
@@ -268,7 +266,7 @@ class BookManager: ObservableObject {
                                         let data = try JSONEncoder().encode(book)
                                         try data.write(to: bookFilePath)
                                     } catch {
-                                        
+
                                     }
                                 }
                             } catch {
@@ -280,13 +278,13 @@ class BookManager: ObservableObject {
                         }
                     }
                     self.loadLibrary()
-                        .sink { books in
-                            DispatchQueue.main.async {
-                                self.library = books.sorted(by: { $0.created > $1.created })
-                                self.inProgress = false
+                            .sink { books in
+                                DispatchQueue.main.async {
+                                    self.library = books.sorted(by: { $0.created > $1.created })
+                                    self.inProgress = false
+                                }
                             }
-                        }
-                        .store(in: &self.cancellables)
+                            .store(in: &self.cancellables)
                 } catch {
                     print("Error reading directory: \(error.localizedDescription)")
                     DispatchQueue.main.async {
@@ -302,59 +300,61 @@ class BookManager: ObservableObject {
         }
     }
 
-    
+
     func loadCurrentBook(onLoaded: @escaping () -> Void) {
         inProgress = true
         DispatchQueue.global(qos: .background).async {
             self.loadCurrentBookId()
-                .sink { bookId in
-                    
-                    if let testBookId = bookId {
-                        self.loadBookFromLibrary(id: testBookId).sink { book in
-                            DispatchQueue.main.async {
-                                self.currentBookId = bookId
-                                self.currentBook = book
-                                onLoaded()
-                                self.inProgress = false
+                    .sink { bookId in
 
-                            }
-                                                 }
-                        .store(in: &self.cancellables)
+                        if let testBookId = bookId {
+                            self.loadBookFromLibrary(id: testBookId).sink { book in
+                                        DispatchQueue.main.async {
+                                            self.currentBookId = bookId
+                                            self.currentBook = book
+                                            onLoaded()
+                                            self.inProgress = false
+
+                                        }
+                                    }
+                                    .store(in: &self.cancellables)
+                        }
                     }
-                }
-                .store(in: &self.cancellables)
+                    .store(in: &self.cancellables)
         }
     }
-    
+
     func loadText(from fileURL: URL, onLoaded: @escaping (BookFile?) -> Void) {
         inProgress = true
         FileTextExtractor.extractText(from: fileURL)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-               if case .failure(let error) = completion {
-                  print("Error extracting text: \(error)")
-                   onLoaded(nil) // Pass nil to signal failure
-                   self.inProgress = false
-               }
-            }, receiveValue: { bookFile in
-               onLoaded(bookFile)
-                self.inProgress = false
-            }).store(in: &cancellables)
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                        print("Error extracting text: \(error)")
+                        onLoaded(nil) // Pass nil to signal failure
+                        self.inProgress = false
+                    }
+                }, receiveValue: { bookFile in
+                    onLoaded(bookFile)
+                    self.inProgress = false
+                })
+                .store(in: &cancellables)
     }
-    
+
     func loadText2(from fileURL: URL, onLoaded: @escaping (BookFile?) -> Void) {
         inProgress = true
         FileTextExtractor.extractTextFromWeb(from: fileURL)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { completion in
-               if case .failure(let error) = completion {
-                  print("Error extracting text: \(error)")
-                   onLoaded(nil) // Pass nil to signal failure
-                   self.inProgress = false
-               }
-            }, receiveValue: { bookFile in
-               onLoaded(bookFile)
-                self.inProgress = false
-            }).store(in: &cancellables)
+                .receive(on: DispatchQueue.main)
+                .sink(receiveCompletion: { completion in
+                    if case .failure(let error) = completion {
+                        print("Error extracting text: \(error)")
+                        onLoaded(nil) // Pass nil to signal failure
+                        self.inProgress = false
+                    }
+                }, receiveValue: { bookFile in
+                    onLoaded(bookFile)
+                    self.inProgress = false
+                })
+                .store(in: &cancellables)
     }
 }

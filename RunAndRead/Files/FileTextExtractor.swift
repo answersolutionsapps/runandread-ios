@@ -18,20 +18,20 @@ struct BookFile: Codable {
 }
 
 class FileTextExtractor {
-    
+
     static func extractTextFromWeb(from fileURL: URL) -> AnyPublisher<BookFile, Error> {
         Future { promise in
             do {
-                let book: BookFile  = try extractTextFromHTML(url: fileURL)
-                 promise(.success(book))
+                let book: BookFile = try extractTextFromHTML(url: fileURL)
+                promise(.success(book))
             } catch {
-                 promise(.failure(error))
+                promise(.failure(error))
             }
         }
-        .receive(on: DispatchQueue.main)
-        .eraseToAnyPublisher()
+                .receive(on: DispatchQueue.main)
+                .eraseToAnyPublisher()
     }
-    
+
     static func extractText(from fileURL: URL) -> AnyPublisher<BookFile, Error> {
         Future { promise in
             do {
@@ -47,15 +47,15 @@ class FileTextExtractor {
                 default:
                     throw NSError(domain: "Unsupported file format", code: 0, userInfo: nil)
                 }
-                 promise(.success(book))
+                promise(.success(book))
             } catch {
-                 promise(.failure(error))
+                promise(.failure(error))
             }
         }
-        .receive(on: DispatchQueue.main)
-        .eraseToAnyPublisher()
+                .receive(on: DispatchQueue.main)
+                .eraseToAnyPublisher()
     }
-    
+
     static func extractContent(document: EPUBDocument?) -> [String] {
         guard let document = document else {
             print("Unable to find the EPUB file.")
@@ -72,43 +72,47 @@ class FileTextExtractor {
                 return nil
             }
         }
-        
+
         let strippedSections: [String] = [
             "title", "section", "cover", "colophon", "imprint", "endnote", "copyright"
         ]
-        
+
         return contentFiles
-            .filter { url in
-                let lastPathComponent = url.deletingPathExtension().lastPathComponent.lowercased()
-                return !strippedSections.contains(where: lastPathComponent.contains)
-            }
-            .flatMap { url in
-                do {
-                    return try SwiftSoup
-                        .parse(String(contentsOf: url, encoding: .utf8))
-                        .select("p,h1,h2,h3,h4,h5,h6,pre")
-                        .compactMap { try $0.text().trimmingCharacters(in: .whitespacesAndNewlines) }
-                        .filter { !$0.isEmpty }
-                } catch {
-                    print("XML File not loaded")
-                    return []
+                .filter { url in
+                    let lastPathComponent = url.deletingPathExtension().lastPathComponent.lowercased()
+                    return !strippedSections.contains(where: lastPathComponent.contains)
                 }
-            }
+                .flatMap { url in
+                    do {
+                        return try SwiftSoup
+                                .parse(String(contentsOf: url, encoding: .utf8))
+                                .select("p,h1,h2,h3,h4,h5,h6,pre")
+                                .compactMap {
+                                    try $0.text().trimmingCharacters(in: .whitespacesAndNewlines)
+                                }
+                                .filter {
+                                    !$0.isEmpty
+                                }
+                    } catch {
+                        print("XML File not loaded")
+                        return []
+                    }
+                }
     }
 
     static func extractTextFromEPUB(_ fileURL: URL) throws -> BookFile {
         guard !fileURL.absoluteString.contains(" ") else {
-               throw NSError(domain: "FileError", code: 236, userInfo: [NSLocalizedDescriptionKey: "Spaces in file name"])
+            throw NSError(domain: "FileError", code: 236, userInfo: [NSLocalizedDescriptionKey: "Spaces in file name"])
         }
 
         guard let document = EPUBDocument(url: fileURL) else {
-               throw NSError(domain: "EPUBError", code: 235, userInfo: [NSLocalizedDescriptionKey: "Broken EPUB document"])
+            throw NSError(domain: "EPUBError", code: 235, userInfo: [NSLocalizedDescriptionKey: "Broken EPUB document"])
         }
-        
+
         let book = BookFile(
-            title: document.title ?? "Unknown",
-            author: document.author ?? "Unknown",
-            content: extractContent(document: document)
+                title: document.title ?? "Unknown",
+                author: document.author ?? "Unknown",
+                content: extractContent(document: document)
         )
         let fileManager = FileManager.default
         let tempFolderURL = document.directory
@@ -121,16 +125,16 @@ class FileTextExtractor {
             // Handle any errors that might occur during deletion
             print("Failed to delete the temporary folder: \(error)")
         }
-        
+
         return book
-        
+
     }
-    
+
     static func extractTextFromPDF(_ fileURL: URL) throws -> BookFile {
         guard let document = PDFDocument(url: fileURL) else {
             throw NSError(domain: "PDFError", code: 237, userInfo: [NSLocalizedDescriptionKey: "Unable to open PDF document"])
         }
-        
+
         var content = [String]()
         let pageCount = document.pageCount
         for pageIndex in 0..<pageCount {
@@ -139,90 +143,95 @@ class FileTextExtractor {
                 content.append(pageText)
             }
         }
-        
+
         let title = document.documentAttributes?[AnyHashable("Title")] as? String ?? "Unknown"
         let author = document.documentAttributes?[AnyHashable("Author")] as? String ?? "Unknown"
-        
-        
+
+
         return BookFile(
-            title: title,
-            author: author,
-            content: content
+                title: title,
+                author: author,
+                content: content
         )
     }
-    
+
     static func extractTextFromHTML(url: URL) throws -> BookFile {
         let semaphore = DispatchSemaphore(value: 0)
         var content = [String]()
         var title = "Unknown"
         var author = "Unknown"
-        
+
         // Download the HTML content from the URL
         URLSession.shared.dataTask(with: url) { data, response, error in
-            if let error = error {
-                print("Failed to download HTML: \(error.localizedDescription)")
-                semaphore.signal()
-                return
-            }
-            
-            guard let data = data else {
-                print("No data received from the URL.")
-                semaphore.signal()
-                return
-            }
-            
-            // Log the raw data for debugging purposes
-            print("Raw HTML Data (first 100 bytes): \(data.prefix(100))")
-            
-            // Try to decode the content with UTF-8 first
-            var htmlContent: String
-            if let decodedHTML = String(data: data, encoding: .utf8) {
-                htmlContent = decodedHTML
-                print("Successfully decoded using UTF-8 encoding.")
-            } else {
-                // If UTF-8 decoding fails, try using the response's suggested encoding
+                    if let error = error {
+                        print("Failed to download HTML: \(error.localizedDescription)")
+                        semaphore.signal()
+                        return
+                    }
+
+                    guard let data = data else {
+                        print("No data received from the URL.")
+                        semaphore.signal()
+                        return
+                    }
+
+                    // Log the raw data for debugging purposes
+                    print("Raw HTML Data (first 100 bytes): \(data.prefix(100))")
+
+                    // Try to decode the content with UTF-8 first
+                    var htmlContent: String
+                    if let decodedHTML = String(data: data, encoding: .utf8) {
+                        htmlContent = decodedHTML
+                        print("Successfully decoded using UTF-8 encoding.")
+                    } else {
+                        // If UTF-8 decoding fails, try using the response's suggested encoding
 //                if let encoding = (response as? HTTPURLResponse)?.textEncodingName,
 //                   let suggestedEncoding = String.Encoding(ianaCharsetName: encoding) {
 //                    htmlContent = String(data: data, encoding: suggestedEncoding) ?? ""
 //                    print("Decoded using encoding from response: \(encoding)")
 //                } else {
-                    // Default to a few common encodings if nothing is found
-                    htmlContent = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) ?? ""
-                    print("Tried UTF-8 and ISO-8859-1 encoding.")
+                        // Default to a few common encodings if nothing is found
+                        htmlContent = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .isoLatin1) ?? ""
+                        print("Tried UTF-8 and ISO-8859-1 encoding.")
 //                }
-            }
-            
-            if htmlContent.isEmpty {
-                print("Failed to decode HTML content.")
-                semaphore.signal()
-                return
-            }
+                    }
 
-            
-            do {
-                // Use SwiftSoup to parse the HTML content
-                let document = try SwiftSoup.parse(htmlContent)
-                title = try document.title()
-                author = try document.select("meta[name=author]").attr("content")
-                
-                // Extract text from the page
-                content = try document
-                    .select("p,h1,h2,h3,h4,h5,h6,pre")
-                    .compactMap { try? $0.text().trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-            } catch {
-                print("Failed to parse HTML: \(error.localizedDescription)")
-            }
-            semaphore.signal()
-        }.resume()
-        
+                    if htmlContent.isEmpty {
+                        print("Failed to decode HTML content.")
+                        semaphore.signal()
+                        return
+                    }
+
+
+                    do {
+                        // Use SwiftSoup to parse the HTML content
+                        let document = try SwiftSoup.parse(htmlContent)
+                        title = try document.title()
+                        author = try document.select("meta[name=author]").attr("content")
+
+                        // Extract text from the page
+                        content = try document
+                                .select("p,h1,h2,h3,h4,h5,h6,pre")
+                                .compactMap {
+                                    try? $0.text().trimmingCharacters(in: .whitespacesAndNewlines)
+                                }
+                                .filter {
+                                    !$0.isEmpty
+                                }
+                    } catch {
+                        print("Failed to parse HTML: \(error.localizedDescription)")
+                    }
+                    semaphore.signal()
+                }
+                .resume()
+
         // Wait for the data task to finish
         semaphore.wait()
-        
+
         return BookFile(
-            title: title,
-            author: author,
-            content: content
+                title: title,
+                author: author,
+                content: content
         )
     }
 }

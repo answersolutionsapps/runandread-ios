@@ -111,6 +111,7 @@ class Book: ObservableObject, Codable, Identifiable, Hashable {
     }
     
     func calculate(completed: @escaping ()->Void) {
+        self.isCalculating = true
         DispatchQueue.global(qos: .background).async {
             let words: [String] = self.text
                     .flatMap { $0.components(separatedBy: .whitespacesAndNewlines) }
@@ -119,22 +120,31 @@ class Book: ObservableObject, Codable, Identifiable, Hashable {
             let totalSeconds = (Double(words.joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.voiceRate)
             let elapsedSeconds = (Double(words.prefix(self.lastPosition).joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.voiceRate)
             
-            nprint("self.lastPosition=>\(self.lastPosition)")
-            nprint("words.count=>\(words.count)")
+            
             DispatchQueue.main.async {
                 self.progressTime = elapsedSeconds.formatSecondsToHMS()
                 self.totalTime = totalSeconds.formatSecondsToHMS()
                 self.isCompleted = self.lastPosition + 1 >= words.count
+                
+                nprint("self.lastPosition=>\(self.lastPosition)")
+                nprint("words.count=>\(words.count)")
+                nprint("self.progressTime=>\(self.progressTime)")
+                nprint("words.totalTime=>\(self.totalTime)")
+                self.isCalculating = false
                 completed()
             }
         }
     }
     
+//    func refreshBooks() {
+//        objectWillChange.send() // Manually notify SwiftUI of changes
+//    }
+    
     // MARK: - Computed Properties
     @Published var isCompleted: Bool = false
     @Published var totalTime: String = "00:00"
     @Published var progressTime: String = "00:00"
-    @Published var isCalculated = false
+    @Published var isCalculating: Bool = true
 }
 
 // MARK: - Time Formatting Extension

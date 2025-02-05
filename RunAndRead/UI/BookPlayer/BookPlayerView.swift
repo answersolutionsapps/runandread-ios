@@ -2,210 +2,155 @@ import SwiftUI
 import AVFoundation
 
 struct BookPlayerView: View {
-    @EnvironmentObject var bookManager: BookManager
-    @EnvironmentObject var player: TextToSpeechPlayer
-    @Binding var path: NavigationPath
-    @State private var isDragging = false
-    @State private var currentTime: TimeInterval = 0
-    @State private var currentDuration: TimeInterval = 0
-    
-    
-    @State private var currentFrame: [String] = []
-    
-    @State private var currentWordIndexInFrame = 0
-    
-    struct ContentView: View {
-        var words: [String] = []
-        var idx: Int = -1
-        var locale: Locale
-
-        @State private var scrollProxy: ScrollViewProxy?
-
-        init(words: [String], index: Int, locale: Locale) {
-            self.idx = index
-            self.words = words
-            self.locale = locale
-        }
-        
-        // Compute whether the locale is right-to-left.
-        var isRTL: Bool {
-            if let languageCode = locale.language.languageCode?.identifier {
-                return Locale.Language(identifier:languageCode).characterDirection == .rightToLeft
-            }
-            return false
-        }
-
-        var body: some View {
-            ScrollView(.horizontal, showsIndicators: false) {
-                ScrollViewReader { proxy in
-                    HStack {
-                        ForEach(words.indices, id: \.self) { index in
-                            Text(words[index])
-                                .font(.title2)
-                                .fontWeight(index == (idx - 1) ? .bold : .regular)
-                                .foregroundColor(index == (idx - 1) ? UIConfig.backgroundColor : UIConfig.primaryColor)
-                                .background(index == (idx - 1) ? UIConfig.accentColor : Color.clear)
-                                .id(index) // Assign an ID for scrolling
-                        }
-                    }
-                    .onAppear {
-                        scrollProxy = proxy
-                        scrollToCurrentWord(proxy: proxy)
-                    }
-                    .onChange(of: idx) { _ in
-                        scrollToCurrentWord(proxy: proxy)
-                    }
-                }
-            }
-            // Set the layout direction of the ScrollView only
-            .environment(\.layoutDirection, isRTL ? .rightToLeft : .leftToRight)
-            .frame(height: 50) // Adjust height as needed
-        }
-
-        private func scrollToCurrentWord(proxy: ScrollViewProxy) {
-            withAnimation {
-                proxy.scrollTo(idx, anchor: .center)
-            }
-        }
-    }
-    
+    @State var viewModel: BookPlayerViewModel
 
     var body: some View {
         ZStack {
             VStack(spacing: 20) {
-                
                 VStack {
-                    
-                    if let book = bookManager.currentBook {
-                        if !currentFrame.isEmpty {
-                            ContentView(
-                                words: currentFrame,
-                                index: currentWordIndexInFrame,
+                    if let book = viewModel.currentBook() {
+                        HorizontalyScrolledTextView(
+                                words: viewModel.currentFrame,
+                                index: viewModel.currentWordIndexInFrame,
                                 locale: book.language)
                                 .frame(maxWidth: .infinity, maxHeight: 150)
-                        }
                         Spacer()
-                        // Book cover and details
-                        VStack(spacing: 16) {
-                            
-                            Text(book.title)
-                                .font(.title)
-                                .fontWeight(.bold)
-                            
-                            Text(book.author)
-                                .font(.title2)
-                                .foregroundColor(.secondary)
-                        }
+                        BookmarkListView(book: book)
                         Spacer()
-                    
-                        VStack {
-                            Slider(value: $currentTime,
-                                   in: 0...currentDuration,
-                                   onEditingChanged: { editing in
-                                
-                                if !editing {
-                                    bookManager.updateLastPositionWith(elapsedTime: Float(currentTime))
-                                }
-                            })
-                            HStack{
-                                Text("\(currentTime.formatSecondsToHMS(currentTime))").padding(.leading, 4)
-                                Spacer()
-                                Text("\(currentDuration.formatSecondsToHMS(currentDuration))").padding(.trailing, 4)
-                            }
-                        }
-                        .padding(.horizontal)
-                        
-                        // Playback controls
-                        HStack(spacing: 40) {
-                            Button(action: {
-                                player.rewind()
-                            }) {
-                                Image(systemName: "gobackward.5")
-                                    .font(.title)
-                            }
-                            
-                            Button(action: {
-                                player.playPause()
-                            }) {
-                                Image(systemName: player.isPlaying() ? "pause.circle.fill" : "play.circle.fill")
-                                    .font(.system(size: 64))
-                            }
-                            
-                            Button(action: {
-                                player.fastForward()
-                            }) {
-                                Image(systemName: "goforward.5")
-                                    .font(.title)
-                            }
-                        }
-                        .padding(.bottom, 40)
-                        .onAppear {
-                            bookManager.loadCurrentBook {
-                                if let b = bookManager.currentBook {
-                                    self.player.setup(
-                                        text: b.text,
-                                        progressCallback: { progress, currentWord, frame, indexInFrame in
-                                            DispatchQueue.main.async {
-                                                self.currentFrame = frame
-                                                self.currentWordIndexInFrame = indexInFrame
-                                                self.currentTime = TimeInterval(progress)
-                                                bookManager.updateLastPosition(for: b.id, newPosition: Float(currentWord))
-                                            }
-                                        }
-                                    )
-                                    DispatchQueue.main.async {
-                                        self.player.loadSelectedVoice(currentBook: b)
-                                        self.player.currentWordIndex = Int(b.lastPosition)
-                                        self.player.updateProgress()
-                                        self.currentDuration = TimeInterval(self.player.totalTime)
-                                    }
-                                }
-                            }
-                        }.onDisappear {
-                            DispatchQueue.main.async {
-                                self.currentWordIndexInFrame = 0
-                                self.currentFrame.removeAll()
-                                self.bookManager.persist {_ in
-                                    
-                                }
-                                self.player.stop()
-                            }
-                        }
+                        BookCoverDetailsView(book: book)
+                        PositionSliderView(book: book)
+                        PlaybackContrallsView()
                     } else {
                         Text("Error: No book found")
-                            .foregroundColor(.red)
+                                .foregroundColor(.red)
                         Spacer()
                     }
-                }.padding()
+                }
+                        .padding()
             }
-//            if bookManager.inProgress {
-//                CustomActivityIndicator()
-//            }
         }
- 
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                    leading:
+                .onAppear {
+                    if !isPreview {
+                        viewModel.setupBook()
+                    }
+                }
+                .onDisappear {
+                    DispatchQueue.main.async {
+                        viewModel.stopPlayer()
+                    }
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarItems(
+                        leading:
                         Button(action: {
-                            self.currentWordIndexInFrame = 0
-                            self.currentFrame.removeAll()
-                            self.bookManager.persist {_ in
-                                self.bookManager.deleteCurrentBook {
-                                    path.removeLast(path.count)
-                                    path.append(AppScreen.home)
-                                }
-                            }
+                            viewModel.reset()
                         }, label: {
                             Text("Library").font(UIConfig.buttonFont)
                         }),
-                    trailing: Button(action: {
-                            path.append(AppScreen.newBook)
-                    }, label: {
-                        Text("Edit").font(UIConfig.buttonFont)
-                    })
+                        trailing:
+                        Button(action: {
+                            viewModel.onEditAction()
+                        }, label: {
+                            Text("Edit").font(UIConfig.buttonFont)
+                        })
                 )
                 .navigationBarHidden(false)
                 .navigationBarBackButtonHidden(true)
+    }
+
+    private func BookCoverDetailsView(book: Book) -> some View {
+        return VStack(spacing: 16) {
+            Text(book.title)
+                    .font(.title)
+                    .fontWeight(.bold)
+
+            Text(book.author)
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+        }
+    }
+
+    private func PlaybackContrallsView() -> some View {
+        return VStack {
+            HStack(spacing: 40) {
+                Button(action: { viewModel.onRewind() }) {
+                    Image(systemName: "gobackward.5")
+                            .font(.largeTitle)
+                }
+                        .accessibilityLabel("Rewind 5 seconds")
+                Button(action: { viewModel.onPlayPause() }) {
+                    Image(systemName: viewModel.playButtonIconName())
+                            .font(.system(size: 64))
+                }
+                        .accessibilityLabel("Play and Pause")
+                Button(action: { viewModel.onFastForward() }) {
+                    Image(systemName: "goforward.5")
+                            .font(.largeTitle)
+                }
+                        .accessibilityLabel("Fastforward 5 seconds")
+            }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+
+            VStack(alignment: .trailing) {
+                Button(action: {
+                    viewModel.addBookmark()
+                }) {
+                    Image(systemName: "bookmark.circle")
+                            .font(.largeTitle)
+                }
+                        .disabled(!viewModel.isPlaying())
+                        .accessibilityLabel("Add a bookmark")
+            }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+        }
+    }
+
+    private func PositionSliderView(book: Book) -> some View {
+        return VStack {
+            Slider(value: $viewModel.currentTime,
+                    in: 0...viewModel.currentDuration,
+                    onEditingChanged: { editing in
+
+                        if !editing {
+                            viewModel.updatePosition(book: book)
+                        }
+                    }
+            )
+            HStack {
+                Text("\(viewModel.currentTimeString)").padding(.leading, 4)
+                Spacer()
+                Text("\(viewModel.currentDurationString)").padding(.trailing, 4)
+            }
+        }
+                .padding(.horizontal)
+    }
+
+    private func BookmarkListView(book: Book) -> some View {
+        return List {
+            ForEach(book.bookmarks, id: \.position) { item in
+                Text(viewModel.textForBookmark(bookmark: item, book: book))
+                        .font(.title3)
+                        .lineLimit(2)
+                        .foregroundColor(.secondary)
+                        .padding()
+                        .onTapGesture {
+                            viewModel.onBookmarkSelect(bookmark: item)
+                        }
+            }
+                    .onDelete { indices in
+                        for index in indices {
+                            let bookmarkToDelete = book.bookmarks[index]
+                            // Remove the bookmark from the data source (array)
+                            // Assuming book.bookmarks is a mutable array
+                            if let index = book.bookmarks.firstIndex(where: { $0.position == bookmarkToDelete.position }) {
+                                book.bookmarks.remove(at: index)
+                            }
+                        }
+                    }
+        }
+                .listStyle(.plain)
     }
 }
 
@@ -213,10 +158,12 @@ struct BookPlayerView: View {
 #Preview {
     NavigationView {
         let path = State(initialValue: NavigationPath())
-        BookPlayerView(path: path.projectedValue)
+        BookPlayerView(viewModel: BookPlayerViewModel(
+                path: path.projectedValue,
+                bookManager: returnBookManagerForPreview(),
+                player: TextToSpeechPlayer()))
     }
-    .environmentObject(returnBookManagerForPreview())
-    .environmentObject(TextToSpeechSimplePlayer())
-    .environmentObject(TextToSpeechPlayer())
+            .environmentObject(returnBookManagerForPreview())
+
 }
 

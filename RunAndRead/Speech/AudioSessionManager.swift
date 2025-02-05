@@ -23,17 +23,17 @@ class AudioSessionManager {
             print("Error setting up audio session: \(error)")
         }
     }
-    
-    static  func chooseAudioSource(source: AudioTarget) {
+
+    static func chooseAudioSource(source: AudioTarget) {
         nprint("chooseAudioSource(source)=>\(source)")
         let session = AVAudioSession.sharedInstance()
         let options: AVAudioSession.CategoryOptions
 
         switch source {
-            case .headphones:
-                options = [.allowBluetooth, .allowBluetoothA2DP]
-            default:
-                options = [.defaultToSpeaker]
+        case .headphones:
+            options = [.allowBluetooth, .allowBluetoothA2DP]
+        default:
+            options = [.defaultToSpeaker]
         }
         do {
             print("chooseAudioSource(1)=>")
@@ -50,7 +50,7 @@ class AudioSessionManager {
             print("Error choosing audio source: \(error)")
         }
     }
-    
+
     static func disableAVSession() {
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)

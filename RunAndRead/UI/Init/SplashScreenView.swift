@@ -44,6 +44,7 @@ enum AppScreen: Hashable {
 struct SplashScreenView: View {
     @EnvironmentObject var bookManager: BookManager
     @EnvironmentObject var simplePlayer: TextToSpeechSimplePlayer
+    @EnvironmentObject var player: TextToSpeechPlayer
     @State private var path = NavigationPath()
     @State private var showSplash = true
       
@@ -71,11 +72,24 @@ struct SplashScreenView: View {
                 .navigationDestination(for: AppScreen.self) { screen in
                     switch screen {
                     case .home:
-                        HomeScreenView(path: $path)
+                        HomeScreenView(
+                            path: $path,
+                            bookManager: bookManager
+                        )
                     case .newBook:
-                        NewBookDialogView(path: $path, bookManager: bookManager, simplePlayer: simplePlayer)
+                        BookSettingsView(
+                            viewModel: BookSettingsViewModel(
+                                path: $path,
+                                bookManager: bookManager,
+                                simplePlayer: simplePlayer)
+                        )
                     case .player:
-                        BookPlayerView(path: $path)
+                        BookPlayerView(
+                            viewModel: BookPlayerViewModel(
+                                path: $path,
+                                bookManager: bookManager,
+                                player: player)
+                        )
                     case .about:
                         AboutScreenView()
                     }

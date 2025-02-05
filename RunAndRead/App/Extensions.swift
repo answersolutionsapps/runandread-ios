@@ -73,7 +73,8 @@ extension Float {
     }
     
     func speedToplaybackRate() -> Float {
-        switch self {
+        let roundedValue = (self * 100).rounded() / 100 // Rounds to nearest 0.01
+        switch roundedValue {
         case 1.5:
             return 0.7
         case 1.25:
@@ -146,13 +147,13 @@ extension String {
         return String(self[range.upperBound...])
     }
     
-    func substringUntilFifthSpace() -> String {
+    func substringTwoSentences() -> String {
         var spaceCount = 0
         for (index, char) in self.enumerated() {
-            if char == " " {
+            if char == "." {
                 spaceCount += 1
-                if spaceCount == 5 {
-                    return String(self.prefix(index))
+                if spaceCount == 2 {
+                    return String(self.prefix(index)) + "!"
                 }
             }
         }

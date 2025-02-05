@@ -1,5 +1,5 @@
 //
-//  NewBookDialogView.swift
+//  BookSettingsView.swift
 //  RunAndRead
 //
 //  Created by Serge Nes on 1/28/25.
@@ -9,264 +9,119 @@ import SwiftUI
 import AVFoundation
 
 
-struct HorizontalPageListView: View {
-    @Binding var selectedPage: Int
-    let totalPages: Int
-    let onPageChanged: (Int) -> Void
-    
-    var body: some View {
-        GeometryReader { geometry in
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 10) {
-                    ForEach(0..<totalPages, id: \.self) { pageIndex in
-                        Button(action: {
-                            selectedPage = pageIndex
-                            onPageChanged(pageIndex)
-                        }) {
-                            Text("\(pageIndex + 1)")
-                                .font(.headline)
-                                .frame(width: 44, height: 44)
-                                .background(selectedPage == pageIndex ? UIConfig.primaryColor : Color.gray)
-                                .foregroundColor(.white)
-//                                .clipShape(Circle())
-                        }
-                        .padding(.vertical, 10)
-                    }
-                }
-                .padding(.horizontal)
-                .onAppear {
-                    // Detect the first visible item when the view appears
-                    let firstVisibleItem = calculateFirstVisibleItem(in: geometry)
-                    selectedPage = firstVisibleItem
-                    onPageChanged(firstVisibleItem)
-                }
-                .onChange(of: geometry.frame(in: .global).origin.x) { _ in
-                    let firstVisibleItem = calculateFirstVisibleItem(in: geometry)
-                    selectedPage = firstVisibleItem
-                    onPageChanged(firstVisibleItem)
-                }
-            }
-        }
-        .frame(height: 60)
-    }
-    
-    private func calculateFirstVisibleItem(in geometry: GeometryProxy) -> Int {
-        let offset = geometry.frame(in: .global).origin.x
-        let itemWidth = 50.0 // button width + spacing (if any)
-        let firstVisibleIndex = Int(offset / itemWidth)
-        return max(0, firstVisibleIndex)
-    }
-}
-
-
-struct TextModifier: ViewModifier {
-    private let font: UIFont
-    private let color: Color
-    private let multilineTextAlignment: TextAlignment
-    
-    init(font: UIFont, color: Color = .black, multilineTextAlignment: TextAlignment = .center) {
-        self.font = font
-        self.color = color
-        self.multilineTextAlignment = multilineTextAlignment
-    }
-    func body(content: Content) -> some View {
-        content
-            .fixedSize(horizontal: false, vertical: true)
-            .font(.custom(font.fontName, size: font.pointSize))
-            .foregroundColor(color)
-            .multilineTextAlignment(multilineTextAlignment)
-            .lineLimit(nil)
-    }
-}
-
-struct ButtonModifier: ViewModifier {
-    private let font: UIFont
-    private let color: Color
-    private let textColor: Color
-    private let width: CGFloat?
-    private let height: CGFloat?
-    
-    init(font: UIFont,
-         color: Color,
-         textColor: Color = .white,
-         width: CGFloat? = nil,
-         height: CGFloat? = nil) {
-        self.font = font
-        self.color = color
-        self.textColor = textColor
-        self.width = width
-        self.height = height
-    }
-    
-    func body(content: Content) -> some View {
-        content
-            .modifier(TextModifier(font: font, color: textColor))
-            .padding()
-            .frame(width: width, height: height)
-            .background(color)
-            .cornerRadius(0)
-    }
-}
-
-struct LongButtonView: View {
-    let title: String
-    var backgroundColor: Color = UIConfig.primaryColor
-    var textColor: Color = .white
-    
-    var body: some View {
-        Text(title)
-        .modifier(ButtonModifier(font: UIConfig.buttonFont2,
-                                         color: backgroundColor,
-                                         textColor: textColor,
-                                         width: UIConfig.actionButtonWidth,
-                                         height: UIConfig.actionButtonHeight))
-    }
-}
-
-
-
-struct NewBookDialogView: View {
-    @EnvironmentObject var bookManager: BookManager
-    @EnvironmentObject var simplePlayer: TextToSpeechSimplePlayer
-    @Binding var path: NavigationPath
-
-    @StateObject private var viewModel: NewBookDialogViewModel
+struct BookSettingsView: View {
+    @State var viewModel: BookSettingsViewModel
     @State private var pinCodeText: String = ""
     @FocusState private var textIsFocused: Bool
 
-    init(path: Binding<NavigationPath>, bookManager: BookManager, simplePlayer: TextToSpeechSimplePlayer) {
-        _viewModel = StateObject(wrappedValue: NewBookDialogViewModel(bookManager: bookManager, simplePlayer: simplePlayer))
-        _path = path
-    }
-
     var body: some View {
         ZStack {
-            Group { // sticky header
-                
-            }
-            Group {
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("Title")
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Title")
                             .font(.headline)
-                        TextField("Enter title", text: $viewModel.title)
+                    TextField("Enter title", text: $viewModel.title)
                             .textFieldStyle(DefaultTextFieldStyle())
                             .font(.title2)
                             .padding(.bottom, 10)
 
-                        Text("Author")
+                    Text("Author")
                             .font(.headline)
-                        TextField("Enter author", text: $viewModel.author)
+                    TextField("Enter author", text: $viewModel.author)
                             .textFieldStyle(DefaultTextFieldStyle())
                             .font(.title2)
-                        
-                        Divider()
-
-                        Text("Language")
+                    Divider()
+                    Text("Language")
                             .font(.headline)
-                        Button(action: {
-                            viewModel.showLanguagePicker = true
-                        }) {
-                            Text(viewModel.languageString())
+                    Button(action: {
+                        viewModel.showLanguagePicker = true
+                    }) {
+                        Text(viewModel.languageString())
                                 .font(.body)
                                 .padding()
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 5)
-                                        .stroke(Color.gray, lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 5)
+                                                .stroke(Color.gray, lineWidth: 1)
                                 )
-                        }
-
-                        Divider()
-                        HStack {
-                            Text("Naration Voice")
+                    }
+                    Divider()
+                    HStack {
+                        Text("Naration Voice")
                                 .font(.headline)
-                            ImageButtonView(
+                        ImageButtonView(
                                 imageName: "play.circle.fill",
                                 imageColor: .accentColor,
                                 action: {
-                                    let text = viewModel.textPreview.substringTwoSentences()
-                                    simplePlayer.startTextToSpeech(text: text, voice: viewModel.selectedVoice, rate: viewModel.defaultVoiceRate)
+                                    viewModel.onPlayPauseText()
                                 }
-                            )
-                                                }
-                        VStack(alignment: .center) {
-                            SpeechSpeedSelector(defaultSpeed: viewModel.defaultVoiceRate.playbackRateToSpeed()) { newSpeed in
-                                    print("Selected speed: \(newSpeed)")
-                                    viewModel.defaultVoiceRate = newSpeed.speedToplaybackRate()
-                            }
-                        }.frame(maxWidth: .infinity)
+                        )
+                    }
+                    VStack(alignment: .center) {
+                        SpeechSpeedSelector(defaultSpeed: viewModel.defaultVoiceRate.playbackRateToSpeed()) { newSpeed in
+                            print("Selected speed: \(newSpeed)")
+                            viewModel.defaultVoiceRate = newSpeed.speedToplaybackRate()
+                        }
+                    }
+                            .frame(maxWidth: .infinity)
 
-                        Button(action: {
-                            viewModel.showVoicePicker = true
-                        }, label: {
-                            Text(String(format: "\(viewModel.selectedVoice.name) (%.2f)", viewModel.defaultVoiceRate.playbackRateToSpeed()))
+                    Button(action: {
+                        viewModel.showVoicePicker = true
+                    }, label: {
+                        Text(String(format: "\(viewModel.selectedVoice.name) (%.2f)", viewModel.defaultVoiceRate.playbackRateToSpeed()))
                                 .font(.body)
                                 .padding()
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 5)
-                                        .stroke(Color.gray, lineWidth: 1)
+                                        RoundedRectangle(cornerRadius: 5)
+                                                .stroke(Color.gray, lineWidth: 1)
                                 )
-                        })
-                        .sheet(isPresented: $viewModel.showVoicePicker) {
-                            VoicePicker(selectedVoice: $viewModel.selectedVoice, selectedLanguage: viewModel.defaultLanguage)
-                        }
-
-                        Divider()
-
-                        VStack {
-                            Text("Text Preview")
-                                .font(.headline)
-                            HorizontalPageListView(selectedPage: $viewModel.selectedPart, totalPages: viewModel.contextText.count) { newPageIndex in
-                                viewModel.onPageChanged(newPageIndex: newPageIndex)
+                    })
+                            .sheet(isPresented: $viewModel.showVoicePicker) {
+                                VoicePicker(selectedVoice: $viewModel.selectedVoice, selectedLanguage: viewModel.defaultLanguage)
                             }
-                            Text("Read from page: \(viewModel.selectedPart + 1)")
-                            Divider()
-                            TextEditor(text: $viewModel.textPreview)
-                                    .font(.body)
-                                    .frame(height: 350)  // Adjust frame as needed
-                                    .disabled(false)
-                                    .focused($textIsFocused)
-                                    .scrollDisabled(false)
-
-                            Spacer()
+                    Divider()
+                    VStack {
+                        Text("Text Preview")
+                                .font(.headline)
+                        HorizontalPageListView(selectedPage: $viewModel.selectedPart, totalPages: viewModel.contextText.count) { newPageIndex in
+                            viewModel.onPageChanged(newPageIndex: newPageIndex)
                         }
-//                        .frame(maxWidth: .infinity, minHeight: 450)
-                        .toolbar {
-                             // Keyboard toolbar with Cancel button
-                             ToolbarItemGroup(placement: .keyboard) {
-                                 Spacer()  // Push the button to the right
-                                 Button("Cancel") {
-                                     // Dismiss the keyboard by unfocusing
-                                     textIsFocused = false
-                                 }
-                             }
-                         }
-                         .padding()
+                        Text("Read from page: \(viewModel.selectedPart + 1)")
                         Divider()
-
-                        if !viewModel.isPresentingConfirm && bookManager.currentBook != nil {
-                            VStack(alignment: .center, spacing: UIConfig.normalSpace) {
-                                Button(action: {
-                                    viewModel.isPresentingConfirm.toggle()
-                                }, label: {
-                                    LongButtonView(title: "Delete Book", backgroundColor: .red).padding(.top, UIConfig.smallSpace)
-                                })
-                                Text("Delete this book from the library").font(.caption).fontWeight(.light).foregroundColor(.red)
-                            }.font(.subheadline).frame(maxWidth: .infinity, maxHeight: 150)
-                        }
+                        TextEditor(text: $viewModel.textPreview)
+                                .font(.body)
+                                .frame(height: 350)  // Adjust frame as needed
+                                .disabled(false)
+                                .focused($textIsFocused)
+                                .scrollDisabled(false)
 
                         Spacer()
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                    .padding()
+                            .toolbar {
+                                // Keyboard toolbar with Cancel button
+                                ToolbarItemGroup(placement: .keyboard) {
+                                    Spacer()  // Push the button to the right
+                                    Button("Cancel") {
+                                        // Dismiss the keyboard by unfocusing
+                                        textIsFocused = false
+                                    }
+                                }
+                            }
+                    Divider()
+                    if viewModel.isDeleteVisible() {
+                        VStack(alignment: .center, spacing: UIConfig.normalSpace) {
+                            Button(action: {
+                                viewModel.isPresentingConfirm.toggle()
+                            }, label: {
+                                LongButtonView(title: "Delete Book", backgroundColor: .red).padding(.top, UIConfig.smallSpace)
+                            })
+                            Text("Delete this book from the library").font(.caption).fontWeight(.light).foregroundColor(.red)
+                        }
+                                .font(.subheadline).frame(maxWidth: .infinity, maxHeight: 150)
+                    }
                 }
+                        .padding()
             }
-
-//            if bookManager.inProgress {
-//                CustomActivityIndicator()
-//            }
-        }
-                .textFieldAlert(
+                    .textFieldAlert(
                             isPresented: $viewModel.isPresentingConfirm,
                             title: "Are you sure?",
                             message: "You cannot undo this action!",
@@ -274,35 +129,15 @@ struct NewBookDialogView: View {
                             placeholder: "Input word delete",
                             action: { newText in
                                 pinCodeText = newText ?? ""
-                                if pinCodeText.lowercased() == "delete", let book = bookManager.currentBook {
-                                    bookManager.deleteBookFromLibrary(book: book) { result in
-                                        switch result {
-                                        case .success:
-                                            print("✅ Book deleted successfully.")
-                                                // Remove the book from the UI list
-                                                bookManager.library.removeAll { $0.id == book.id }
-                                                bookManager.deleteCurrentBook {
-                                                    path.removeLast(path.count)
-                                                    path.append(AppScreen.home)
-                                                }
-                                        case .failure(let error):
-                                            print("❌ Failed to delete book: \(error.localizedDescription)")
-                                        }
-                                    }
-        
-        
+                                if pinCodeText.lowercased() == "delete" {
+                                    viewModel.onDeleteBook()
                                 }
                             }
-                        )
-        .onAppear {
-            viewModel.loadBookData()
-            if isPreview {
-                bookManager.currentBook = Book(title: "This text has been narrated by the Run and Read app! We hope you enjoyed listening!", author: "Author", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 0, bookmarks: [])
-                viewModel.textPreview = ""
-                viewModel.contextText = ["With this approach, you can now have selectable text in your view without allowing the user to modify the content. The text will be fully selectable, and users will be able to copy it to the clipboard by selecting and using the standard copy commands.", "Lorem ipsum2", "Lorem ipsum3"]
-            }
-        }
-                .navigationBarTitleDisplayMode(.inline)
+                    )
+                    .onAppear {
+                        viewModel.loadBookData(isPreview: isPreview)
+                    }
+                    .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .principal) {
                             HStack {
@@ -310,26 +145,27 @@ struct NewBookDialogView: View {
                                 Text("Book Settings").font(.title2)
                                 Spacer()
                             }
-                            .tint(UIConfig.backgroundColor)
+                                    .tint(UIConfig.backgroundColor)
                         }
                     }
-        .navigationBarBackButtonHidden(true)
-        .navigationBarItems(
-            leading:
-                Button(action: {
-                    path.removeLast()
-                }, label: {
-                    Text("Cancel").font(UIConfig.buttonFont)
-                }),
-            trailing: Button(action: {
-                viewModel.saveBook()
-                path.append(AppScreen.player)
-            }, label: {
-                Text("Save").font(UIConfig.buttonFont)
-            })
-        )
-        .sheet(isPresented: $viewModel.showLanguagePicker) {
-            LanguagePicker(selectedLanguage: $viewModel.selectedLanguage)
+                    .navigationBarBackButtonHidden(true)
+                    .navigationBarItems(
+                            leading:
+                            Button(action: {
+                                viewModel.onCancel()
+                            }, label: {
+                                Text("Cancel").font(UIConfig.buttonFont)
+                            }),
+                            trailing: Button(action: {
+                                viewModel.saveBook()
+
+                            }, label: {
+                                Text("Save").font(UIConfig.buttonFont)
+                            })
+                    )
+                    .sheet(isPresented: $viewModel.showLanguagePicker) {
+                        LanguagePicker(selectedLanguage: $viewModel.selectedLanguage)
+                    }
         }
     }
 }
@@ -337,14 +173,16 @@ struct NewBookDialogView: View {
 #Preview {
     NavigationView {
         let path = State(initialValue: NavigationPath())
-        NewBookDialogView(path: path.projectedValue, bookManager: BookManager(), simplePlayer: TextToSpeechSimplePlayer())
+        BookSettingsView(
+                viewModel: BookSettingsViewModel(
+                        path: path.projectedValue,
+                        bookManager: BookManager(),
+                        simplePlayer: TextToSpeechSimplePlayer()))
     }
-    .environmentObject(BookManager())
-    .environmentObject(TextToSpeechSimplePlayer())
 }
 
 
-//struct NewBookDialogView: View {
+//struct NewBookDialogView2: View {
 //    @EnvironmentObject var bookManager: BookManager
 //    @EnvironmentObject var simplePlayer: TextToSpeechSimplePlayer
 //    @Binding var path: NavigationPath
@@ -644,9 +482,10 @@ struct NewBookDialogView: View {
 //#Preview {
 //    NavigationView {
 //        let path = State(initialValue: NavigationPath())
-//        NewBookDialogView(path: path.projectedValue)
+//        NewBookDialogView2(path: path.projectedValue)
 //    }
 //    .environmentObject(BookManager())
 //    .environmentObject(TextToSpeechSimplePlayer())
 //    
 //}
+//

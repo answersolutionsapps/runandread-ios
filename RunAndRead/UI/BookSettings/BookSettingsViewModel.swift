@@ -1,5 +1,5 @@
 //
-//  NewBookDialogViewModel.swift
+//  BookSettingsViewModel.swift
 //  RunAndRead
 //
 //  Created by Serge Nes on 2/4/25.
@@ -8,7 +8,8 @@
 import AVFoundation
 import SwiftUI
 
-class NewBookDialogViewModel: ObservableObject {
+class BookSettingsViewModel: ObservableObject {
+    @Binding var path: NavigationPath
     @Published var title: String = ""
     @Published var author: String = ""
     @Published var textPreview: String = "..."
@@ -25,9 +26,10 @@ class NewBookDialogViewModel: ObservableObject {
     private var bookManager: BookManager
     private var simplePlayer: TextToSpeechSimplePlayer
 
-    init(bookManager: BookManager, simplePlayer: TextToSpeechSimplePlayer) {
+    init(path: Binding<NavigationPath>, bookManager: BookManager, simplePlayer: TextToSpeechSimplePlayer) {
         self.bookManager = bookManager
         self.simplePlayer = simplePlayer
+        _path = path
         loadSelectedVoice()
     }
 
@@ -63,20 +65,23 @@ class NewBookDialogViewModel: ObservableObject {
                 switch result {
                 case .success(let fileURL):
                     print("Book saved successfully at: \(fileURL.path)")
+                    self.path.append(AppScreen.player)
                 case .failure(let error):
                     print("Failed to save book: \(error.localizedDescription)")
                 }
             }
         } else {
             let book = Book(
-                title: title,
-                author: author,
-                language: selectedLanguage,
-                voiceIdentifier: selectedVoice.identifier,
-                voiceRate: defaultVoiceRate,
-                text: Array(contextText.suffix(from: safeIndex).map { "\($0). " }),
-                lastPosition: 0,
-                bookmarks: []
+                    title: title,
+                    author: author,
+                    language: selectedLanguage,
+                    voiceIdentifier: selectedVoice.identifier,
+                    voiceRate: defaultVoiceRate,
+                    text: Array(contextText.suffix(from: safeIndex).map {
+                        "\($0). "
+                    }),
+                    lastPosition: 0,
+                    bookmarks: []
             )
 
             bookManager.saveBookToLibrary(book: book) { result in
@@ -84,7 +89,7 @@ class NewBookDialogViewModel: ObservableObject {
                 case .success(let fileURL):
                     print("Book saved successfully at: \(fileURL.path)")
                     self.bookManager.saveCurrentBook(book: book) {
-                        
+                        self.path.append(AppScreen.player)
                     }
                 case .failure(let error):
                     print("Failed to save book: \(error.localizedDescription)")
@@ -93,7 +98,12 @@ class NewBookDialogViewModel: ObservableObject {
         }
     }
 
-    func loadBookData() {
+    func loadBookData(isPreview: Bool = false) {
+        if isPreview {
+            bookManager.currentBook = Book(title: "This text has been narrated by the Run and Read app! We hope you enjoyed listening!", author: "Author", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 0, bookmarks: [])
+            textPreview = ""
+            contextText = ["With this approach, you can now have selectable text in your view without allowing the user to modify the content. The text will be fully selectable, and users will be able to copy it to the clipboard by selecting and using the standard copy commands.", "Lorem ipsum2", "Lorem ipsum3"]
+        }
         if let book = bookManager.currentBook {
             textPreview = currentPart(parts: book.text)
             contextText = book.text
@@ -108,7 +118,9 @@ class NewBookDialogViewModel: ObservableObject {
     }
 
     private func currentPart(parts: [String]) -> String {
-        if parts.isEmpty { return "" }
+        if parts.isEmpty {
+            return ""
+        }
         let safeIndex = min(selectedPart, contextText.count)
         return parts[safeIndex]
     }
@@ -121,5 +133,42 @@ class NewBookDialogViewModel: ObservableObject {
 
     func languageString() -> String {
         return defaultLanguage.localizedString(forLanguageCode: defaultLanguage.identifier) ?? "Unknown"
+    }
+
+    func onCancel() {
+        path.removeLast()
+    }
+
+    //----- Player
+
+    func onPlayPauseText() {
+        let text = textPreview.substringTwoSentences()
+        simplePlayer.startTextToSpeech(text: text, voice: selectedVoice, rate: defaultVoiceRate)
+    }
+
+    //---Delete
+    func isDeleteVisible() -> Bool {
+        return !isPresentingConfirm && bookManager.currentBook != nil
+    }
+
+    func onDeleteBook() {
+        if let book = bookManager.currentBook {
+            bookManager.deleteBookFromLibrary(book: book) { result in
+                switch result {
+                case .success:
+                    print("✅ Book deleted successfully.")
+                    // Remove the book from the UI list
+                    self.bookManager.library.removeAll {
+                        $0.id == book.id
+                    }
+                    self.bookManager.deleteCurrentBook {
+                        self.path.removeLast(self.path.count)
+                        self.path.append(AppScreen.home)
+                    }
+                case .failure(let error):
+                    print("❌ Failed to delete book: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }

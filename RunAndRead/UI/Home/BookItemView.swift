@@ -33,23 +33,28 @@ struct BookItemView: View {
                     .padding(.horizontal, 8)
                     .padding(.bottom, 2)
                 Divider()
-                if item.isCompleted {
-                    Group {
-                        Text("Finished")
-                            .fontWeight(.bold) +
-                        Text(" | \(item.language.localizedString(forIdentifier: item.language.identifier) ?? "Unknown")")
-                    }
-                    .font(.body)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 8)
-                    .padding(.vertical, 2)
-                    
+                if item.isCalculating {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle()).padding(.leading, 8)
                 } else {
-                    Text("\(item.progressTime) of \(item.totalTime) | \(item.language.localizedString(forIdentifier: item.language.identifier) ?? "Unknown")")
+                    if item.isCompleted {
+                        Group {
+                            Text("Finished")
+                                .fontWeight(.bold) +
+                            Text(" | \(item.language.localizedString(forIdentifier: item.language.identifier) ?? "Unknown")")
+                        }
                         .font(.body)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.leading, 8)
                         .padding(.vertical, 2)
+                        
+                    } else {
+                        Text("\(item.progressTime) of \(item.totalTime) | \(item.language.localizedString(forIdentifier: item.language.identifier) ?? "Unknown")")
+                            .font(.body)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 8)
+                            .padding(.vertical, 2)
+                    }
                 }
             }
             .padding(.top, 8)
@@ -59,14 +64,12 @@ struct BookItemView: View {
         .scaleEffect(isPressed ? 0.95 : 1) // Subtle scaling effect
                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed) // Smooth animation
                 .onTapGesture {
-                    
                     withAnimation(.easeInOut(duration: 0.1)) {
                         isPressed = true
                     }
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         withAnimation(.easeOut(duration: 0.15)) {
                             isPressed = false
-                            
                         }
                         onSelect()
                     }

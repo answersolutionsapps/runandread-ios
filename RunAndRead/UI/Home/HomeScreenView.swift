@@ -29,8 +29,8 @@ struct DocumentPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let supportedTypes: [UTType] = [
-            .plainText,                  // .txt
-            .pdf,                        // .pdf
+            .plainText, // .txt
+            .pdf, // .pdf
             UTType(filenameExtension: "epub")! // .epub (eBooks)
 //            UTType(filenameExtension: "mobi")!, // .mobi (eBooks)
 //            UTType(filenameExtension: "azw3")!  // .azw3 (Kindle eBooks)
@@ -41,7 +41,8 @@ struct DocumentPicker: UIViewControllerRepresentable {
         return picker
     }
 
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
+    }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         var parent: DocumentPicker
@@ -58,210 +59,141 @@ struct DocumentPicker: UIViewControllerRepresentable {
     }
 }
 
+extension HomeScreenView {
+    init(path: Binding<NavigationPath>, bookManager: BookManager) {
+        _viewModel = State(wrappedValue: HomeScreenViewModel(bookManager: bookManager, path: path))
+    }
+}
 
 
 struct HomeScreenView: View {
-    @EnvironmentObject var bookManager: BookManager
     @Environment(\.scenePhase) private var scenePhase
-    @Binding var path: NavigationPath
-    @State private var showFilePicker = false
-    @State private var searchText = ""
-    
-    var filteredBooks: [Book] {
-        dataSource().filter {
-               searchText.isEmpty ||
-               $0.title.localizedCaseInsensitiveContains(searchText) ||
-               $0.author.localizedCaseInsensitiveContains(searchText)
-           }
-       }
-    
-    func dataSource() -> [Book] {
-        return bookManager.library.isEmpty ? bookManager.libraryDefault : bookManager.library
-    }
-        
+    @FocusState private var textIsFocused: Bool
+    @State private var viewModel: HomeScreenViewModel
+
     var body: some View {
         ZStack {
             VStack {
-                SearchBar(text: $searchText)
-                if dataSource().isEmpty {
+                SearchBar(text: $viewModel.searchText)
+                        .focused($textIsFocused)
+                        .toolbar {
+                            // Keyboard toolbar with Cancel button
+                            ToolbarItemGroup(placement: .keyboard) {
+                                Spacer()  // Push the button to the right
+                                Button("Cancel") {
+                                    // Dismiss the keyboard by unfocusing
+                                    textIsFocused = false
+                                }
+                            }
+                        }
+                if viewModel.dataSource.isEmpty {
                     emptyLibraryView
                 } else {
-                    List{
-                        ForEach(filteredBooks, id: \.id) { item in
+                    List {
+                        ForEach(viewModel.filteredBooks, id: \.id) { item in
                             BookItemView(
-                                item: item,
-                                onSelect: {
-                                    bookManager.saveCurrentBook(book: item) {
-                                        DispatchQueue.main.async {
-                                            path.append(AppScreen.player)
-                                        }
+                                    item: item,
+                                    onSelect: {
+                                        viewModel.onSelectBook(book: item)
                                     }
-                                }
-                            ).onAppear(perform: {
-//                                if !item.isCalculated {
-                                    item.calculate { }
-//                                }
-                            })
-                            .padding(.horizontal, 8)
-                            .listRowSeparator(.hidden)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 0, trailing: 12))
-                            .background(Color.clear)
+                            )
+                                    .onAppear(perform: {
+                                        item.calculate {
+                                        }
+                                    })
+                                    .padding(.horizontal, 8)
+                                    .listRowSeparator(.hidden)
+                                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 0, trailing: 12))
+                                    .background(Color.clear)
                         }
                     }
-                    .listStyle(.plain)
+                            .listStyle(.plain)
                 }
             }
-            if bookManager.inProgress {
-                CustomActivityIndicator()
-            }
         }
-        .sheet(isPresented: $showFilePicker) {
-            DocumentPicker { fileURL in
-                    bookManager.loadText(from: fileURL) { bookFile in
-                        guard let bookFile = bookFile else {
-                            return
-                        }
-                        
-                        bookManager.plainTextData =  bookFile.content
-                        bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
-                        
-                        bookManager.titleData = bookFile.title
-                        bookManager.authorData = bookFile.author
-
-                        DispatchQueue.main.async {
-                            print("loadText.title => \(bookFile.title)")
-                            print("loadText.author => \(bookFile.author)")
-
-                            self.path.append(AppScreen.newBook)
-                        }
+                .sheet(isPresented: $viewModel.showFilePicker) {
+                    DocumentPicker { fileURL in
+                        viewModel.onFileSelected(fileURL: fileURL)
                     }
-            }
-        }
-        .onChange(of: scenePhase) { newPhase in
-                       switch newPhase {
-                       case .active:
-                           print("App is active (foreground)")
-                           if let url = bookManager.openedFilePath {
-                               bookManager.loadText(from: url) { bookFile in
-                                   bookManager.openedFilePath?.stopAccessingSecurityScopedResource()
-                                   bookManager.openedFilePath = nil
-                                   guard let bookFile = bookFile else {
-                                       return
-                                   }
-                                   
-                                   bookManager.plainTextData =  bookFile.content
-                                   bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
-                                   
-                                   bookManager.titleData = bookFile.title
-                                   bookManager.authorData = bookFile.author
-
-                                   DispatchQueue.main.async {
-                                       print("loadText.title => \(bookFile.title)")
-                                       print("loadText.author => \(bookFile.author)")
-                                       self.path.append(AppScreen.newBook)
-                                   }
-                               }
-                           }
-                       case .inactive:
-                           print("App is inactive")
-                       case .background:
-                           print("App is in the background")
-                       @unknown default:
-                           print("Unknown scene phase")
-                       }
-                   }
-        .onAppear {
-            if !isPreview {
-                bookManager.loadBooks()
-            }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("Eyes-Free Library").font(.title2)
-            }
-        }
-        .navigationBarItems(leading: aboutButton, trailing: addButton)
-        .navigationBarHidden(false)
-        .navigationBarBackButtonHidden(true)
+                }
+                .onChange(of: scenePhase) { newPhase in
+                    switch newPhase {
+                    case .active:
+                        print("App is active (foreground)")
+                        viewModel.onBackToForegraund()
+                    case .inactive:
+                        print("App is inactive")
+                    case .background:
+                        print("App is in the background")
+                    @unknown default:
+                        print("Unknown scene phase")
+                    }
+                }
+                .onAppear {
+                    if !isPreview {
+                        viewModel.loadBooks()
+                    }
+                }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Text("Eyes-Free Library").font(.title2)
+                    }
+                }
+                .navigationBarItems(leading: aboutButton, trailing: addButton)
+                .navigationBarHidden(false)
+                .navigationBarBackButtonHidden(true)
     }
-    
+
     private var emptyLibraryView: some View {
         VStack {
             Text("Hit the plus button to open your first book and enjoy eyes-free reading!")
-                .font(.title2)
-                .multilineTextAlignment(.center)
-                .padding()
-                .foregroundColor(.gray)
+                    .font(.title2)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .foregroundColor(.gray)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGray6))
-        .cornerRadius(10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
     }
-    
+
     private var aboutButton: some View {
         Button(action: showAbout, label: {
             Image(systemName: "info.square")
-                .tint(UIConfig.primaryColor)
-                .imageScale(.large)
+                    .tint(UIConfig.primaryColor)
+                    .imageScale(.large)
         })
     }
-    
+
     private var addButton: some View {
         Menu {
-            Button(action: { showFilePicker = true }) {
+            Button(action: { viewModel.showFilePicker = true }) {
                 Label("From File", systemImage: "doc")
             }
-//            Button(action: pasteFromClipboardWebLink) {
-//                Label("From Web", systemImage: "network")
-//            }
             Button(action: pasteFromClipboard) {
                 Label("From Clipboard", systemImage: "doc.on.clipboard")
             }
         } label: {
             Image(systemName: "plus")
-                .tint(UIConfig.primaryColor)
-                .imageScale(.large)
+                    .tint(UIConfig.primaryColor)
+                    .imageScale(.large)
         }
     }
-    
+
     private func showAbout() {
-        self.path.append(AppScreen.about)
+        viewModel.onShowAbout()
     }
-    
+
     private func pasteFromClipboard() {
-            if let text = UIPasteboard.general.string {
-                bookManager.plainTextData = [text, "Narrated by Run and Read!"]
-                path.append(AppScreen.newBook)
-            } else {
-                print("No text found in clipboard")
-            }
+        if let text = UIPasteboard.general.string {
+            viewModel.onPasteFromClipboard(text: text)
+        } else {
+            print("No text found in clipboard")
         }
-    
-    private func pasteFromClipboardWebLink() {
-            if let text = UIPasteboard.general.string, let url = URL(string: text) {
-                bookManager.loadText2(from: url) { bookFile in
-                    guard let bookFile = bookFile else {
-                        return
-                    }
-                    
-                    bookManager.plainTextData = bookFile.content
-                    bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
-                    
-                    bookManager.titleData = bookFile.title
-                    bookManager.authorData = bookFile.author
+    }
 
-                    DispatchQueue.main.async {
-                        print("loadText.title => \(bookFile.title)")
-                        print("loadText.author => \(bookFile.author)")
 
-                        self.path.append(AppScreen.newBook)
-                    }
-                }
-            } else {
-                print("No web link found in clipboard")
-            }
-        }
 }
 
 // Search Bar Component
@@ -270,11 +202,11 @@ struct SearchBar: View {
 
     var body: some View {
         TextField("Search", text: $text)
-            .padding(12)
-            .background(Color(.systemGray6))
-            .cornerRadius(0)
-            .padding(.horizontal)
-            .padding(.vertical, 5)
+                .padding(12)
+                .background(Color(.systemGray6))
+                .cornerRadius(0)
+                .padding(.horizontal)
+                .padding(.vertical, 5)
     }
 }
 
@@ -284,18 +216,18 @@ func returnBookManagerForPreview() -> BookManager {
     let m = BookManager()
     m.currentBook = book
     m.currentBookId = book.id
-    
+
     m.library = [book, book2, book, book, book, book]
-    
+
     return m
 }
 
 #Preview {
     NavigationView {
         let path = State(initialValue: NavigationPath())
-        
-        HomeScreenView(path: path.projectedValue)
-            .environmentObject(returnBookManagerForPreview())
-            .environmentObject(TextToSpeechSimplePlayer())
+
+        HomeScreenView(path: path.projectedValue, bookManager: BookManager())
+                .environmentObject(returnBookManagerForPreview())
+                .environmentObject(TextToSpeechSimplePlayer())
     }
 }
