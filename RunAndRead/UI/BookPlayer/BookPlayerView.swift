@@ -9,18 +9,23 @@ struct BookPlayerView: View {
             VStack(spacing: 20) {
                 VStack {
                     if let book = viewModel.currentBook() {
+                        BookmarkListView(book: book)
+                        Divider()
                         HorizontalyScrolledTextView(
                                 words: viewModel.currentFrame,
                                 index: viewModel.currentWordIndexInFrame,
                                 locale: book.language)
-                                .frame(maxWidth: .infinity, maxHeight: 150)
-                        Spacer()
-                        BookmarkListView(book: book)
-                        Spacer()
+                                .frame(maxWidth: .infinity, maxHeight: 60)
+                        Divider()
                         BookCoverDetailsView(book: book)
                         PositionSliderView(book: book)
                         PlaybackContrallsView()
+                    } else if viewModel.isInitializing() {
+                        Spacer()
+                        Text("Loading...")
+                        Spacer()
                     } else {
+                        Spacer()
                         Text("Error: No book found")
                                 .foregroundColor(.red)
                         Spacer()
@@ -35,15 +40,13 @@ struct BookPlayerView: View {
                     }
                 }
                 .onDisappear {
-                    DispatchQueue.main.async {
-                        viewModel.stopPlayer()
-                    }
+                    viewModel.stopPlayer()
                 }
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarItems(
                         leading:
                         Button(action: {
-                            viewModel.reset()
+                            viewModel.onGoToLibrary()
                         }, label: {
                             Text("Library").font(UIConfig.buttonFont)
                         }),
@@ -62,6 +65,7 @@ struct BookPlayerView: View {
         return VStack(spacing: 16) {
             Text(book.title)
                     .font(.title)
+                    .lineLimit(3)
                     .fontWeight(.bold)
 
             Text(book.author)
@@ -112,7 +116,6 @@ struct BookPlayerView: View {
             Slider(value: $viewModel.currentTime,
                     in: 0...viewModel.currentDuration,
                     onEditingChanged: { editing in
-
                         if !editing {
                             viewModel.updatePosition(book: book)
                         }
@@ -131,10 +134,10 @@ struct BookPlayerView: View {
         return List {
             ForEach(book.bookmarks, id: \.position) { item in
                 Text(viewModel.textForBookmark(bookmark: item, book: book))
-                        .font(.title3)
+                    .font(.title3)
                         .lineLimit(2)
                         .foregroundColor(.secondary)
-                        .padding()
+                        .padding(10)
                         .onTapGesture {
                             viewModel.onBookmarkSelect(bookmark: item)
                         }
@@ -150,7 +153,7 @@ struct BookPlayerView: View {
                         }
                     }
         }
-                .listStyle(.plain)
+        .listStyle(.plain)
     }
 }
 

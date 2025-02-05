@@ -61,17 +61,16 @@ class BookPlayerViewModel: ObservableObject {
         }
     }
 
-    func stopPlayer() {
+    @MainActor func stopPlayer() {
+        self.player.stop()
         self.bookManager.persist { _ in
-            DispatchQueue.main.async {
-                self.player.stop()
-            }
+
         }
     }
 
-    func reset() {
+    func onGoToLibrary() {
         self.currentFrame = []
-        self.currentWordIndexInFrame = -1
+        self.currentWordIndexInFrame = 0
         self.bookManager.persist { _ in
             DispatchQueue.main.async {
                 self.bookManager.deleteCurrentBook {
@@ -88,6 +87,7 @@ class BookPlayerViewModel: ObservableObject {
 
     @MainActor func updatePosition(book: Book) {
         self.bookManager.updateLastPosition(for: book.id, newPosition: Int(currentTime))
+        self.player.onPrepareForPlayFromNewPosition()
         self.player.defineCurrentWordIndex(value: Int(currentTime)) { label in
             self.currentTimeString = label
         }
@@ -96,9 +96,17 @@ class BookPlayerViewModel: ObservableObject {
     func addBookmark() {
         self.bookManager.addABookmark()
     }
+    
+    @MainActor func isInitializing() -> Bool {
+        return !player.isNotUndefined()
+    }
 
-    func currentBook() -> Book? {
-        return bookManager.currentBook
+    @MainActor func currentBook() -> Book? {
+        if player.isNotUndefined() {
+            return bookManager.currentBook
+        } else {
+            return nil
+        }
     }
 
     //----Player
@@ -128,9 +136,10 @@ class BookPlayerViewModel: ObservableObject {
     }
 
     @MainActor func onBookmarkSelect(bookmark: Bookmark) {
-        self.player.pause()
+        self.player.onPrepareForPlayFromNewPosition()
         self.player.defineCurrentWordIndex(value: Int(bookmark.position))
         self.player.updateProgress()
+        self.player.playPause()
     }
 }
 

@@ -59,17 +59,10 @@ struct DocumentPicker: UIViewControllerRepresentable {
     }
 }
 
-extension HomeScreenView {
-    init(path: Binding<NavigationPath>, bookManager: BookManager) {
-        _viewModel = State(wrappedValue: HomeScreenViewModel(bookManager: bookManager, path: path))
-    }
-}
-
-
 struct HomeScreenView: View {
     @Environment(\.scenePhase) private var scenePhase
     @FocusState private var textIsFocused: Bool
-    @State private var viewModel: HomeScreenViewModel
+    @State var viewModel: HomeScreenViewModel
 
     var body: some View {
         ZStack {
@@ -211,8 +204,8 @@ struct SearchBar: View {
 }
 
 func returnBookManagerForPreview() -> BookManager {
-    let book = Book(title: "This text has been narrated by the Run and Read app! We hope you enjoyed listening!", author: "Author", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 0, bookmarks: [])
-    let book2 = Book(title: "Title 2", author: "Author 2", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 1, bookmarks: [])
+    let book = Book(title: "This text has been narrated by the Run and Read app! We hope you enjoyed listening!", author: "Author", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 0, bookmarks: [Bookmark(voiceRate: 1, position: 1),Bookmark(voiceRate: 1, position: 2),Bookmark(voiceRate: 1, position: 3),Bookmark(voiceRate: 1, position: 4)])
+    let book2 = Book(title: "Title 2", author: "Author 2", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 1, bookmarks: [Bookmark(voiceRate: 1, position: 1),Bookmark(voiceRate: 1, position: 2),Bookmark(voiceRate: 1, position: 3),Bookmark(voiceRate: 1, position: 4)])
     let m = BookManager()
     m.currentBook = book
     m.currentBookId = book.id
@@ -226,7 +219,9 @@ func returnBookManagerForPreview() -> BookManager {
     NavigationView {
         let path = State(initialValue: NavigationPath())
 
-        HomeScreenView(path: path.projectedValue, bookManager: BookManager())
+        HomeScreenView(viewModel: HomeScreenViewModel(
+            bookManager: returnBookManagerForPreview(),
+            path: path.projectedValue))
                 .environmentObject(returnBookManagerForPreview())
                 .environmentObject(SimpleTTSPlayer())
     }

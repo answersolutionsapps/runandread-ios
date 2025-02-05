@@ -194,7 +194,7 @@ class BookManager: ObservableObject {
 
     func addABookmark() {
         if let book = currentBook {
-            book.bookmarks.append(Bookmark(voiceRate: book.voiceRate, position: book.lastPosition))
+            book.bookmarks.insert(Bookmark(voiceRate: book.voiceRate, position: book.lastPosition), at: 0) 
         }
     }
 
@@ -233,18 +233,18 @@ class BookManager: ObservableObject {
                         DispatchQueue.main.async {
                             self.library = books.sorted(by: { $0.created > $1.created })
                             if self.library.isEmpty {
-                                self.loadDefaultLibrary()
+                                self.loadDefaultLibrary(onLoaded: onLoaded)
                             } else {
                                 self.inProgress = false
+                                onLoaded()
                             }
-                            onLoaded()
                         }
                     }
                     .store(in: &self.cancellables)
         }
     }
 
-    func loadDefaultLibrary() {
+    func loadDefaultLibrary(onLoaded: @escaping () -> Void) {
         self.libraryDefault.removeAll()
         DispatchQueue.global(qos: .background).async {
             let fileManager = FileManager.default
@@ -266,7 +266,7 @@ class BookManager: ObservableObject {
                                         let data = try JSONEncoder().encode(book)
                                         try data.write(to: bookFilePath)
                                     } catch {
-
+                                        print("Error JSONEncoder file \(fileURL.lastPathComponent): \(error.localizedDescription)")
                                     }
                                 }
                             } catch {
@@ -282,6 +282,7 @@ class BookManager: ObservableObject {
                                 DispatchQueue.main.async {
                                     self.library = books.sorted(by: { $0.created > $1.created })
                                     self.inProgress = false
+                                    onLoaded()
                                 }
                             }
                             .store(in: &self.cancellables)

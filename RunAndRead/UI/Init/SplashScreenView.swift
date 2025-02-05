@@ -73,8 +73,9 @@ struct SplashScreenView: View {
                     switch screen {
                     case .home:
                         HomeScreenView(
-                            path: $path,
-                            bookManager: bookManager
+                            viewModel: HomeScreenViewModel(
+                                bookManager: bookManager,
+                                path: $path)
                         )
                     case .newBook:
                         BookSettingsView(
