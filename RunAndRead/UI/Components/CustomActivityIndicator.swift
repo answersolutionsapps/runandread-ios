@@ -56,8 +56,8 @@ struct CustomActivityIndicator: View {
     var progressMessge = ""
     var body: some View {
         ZStack {
-            Color.black
-                .opacity(0.7)
+            Color.white
+                .opacity(0.3)
             .edgesIgnoringSafeArea(.all)
             CustomCardView(
                 contentView: AnyView(VStack(alignment: .center) {
@@ -66,22 +66,39 @@ struct CustomActivityIndicator: View {
                     Text("Working..")
                     .font(.headline)
                 }
-               
-                .frame(width: 120, height: 100)
+                .frame(width: 72, height: 72)
             }.padding(UIConfig.largeSpace)))
         }
     }
 }
 struct CustomActivityIndicator_Previews: PreviewProvider {
     static var previews: some View {
-        CustomActivityIndicator()
+        NavigationView {
+            ZStack{
+                VStack (alignment: .center){
+                    Text("Background Text")
+                        .font(.title2)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .background(.red)
+                CustomActivityIndicator()
+            }
+        }
     }
 }
 
 struct CustomActivityIndicatorDark_Previews: PreviewProvider {
     static var previews: some View {
         NavigationView {
-            CustomActivityIndicator()
+            ZStack{
+                VStack (alignment: .center){
+                    Text("Background Text")
+                        .font(.title2)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .background(.red)
+                CustomActivityIndicator()
+            }
         }
         .colorScheme(.dark)
     }

@@ -250,10 +250,10 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
 extension TextToSpeechPlayer: @preconcurrency AVSpeechSynthesizerDelegate {
 
     private func printInfo(place: Int) {
-        nprint("\(place). totallWordIndex => \(currentWordIndex) of \(words.count); frameIndex=> \(currentWordIndexInFrame) of \(currentFrame.count)")
-        if currentWordIndex < words.count - 1 && currentWordIndexInFrame < currentFrame.count - 1 {
-            nprint("\(place). \(state). totallWord => \(words[currentWordIndex]); frameWord=> \(currentFrame[currentWordIndexInFrame])")
-        }
+//        nprint("\(place). totallWordIndex => \(currentWordIndex) of \(words.count); frameIndex=> \(currentWordIndexInFrame) of \(currentFrame.count)")
+//        if currentWordIndex < words.count - 1 && currentWordIndexInFrame < currentFrame.count - 1 {
+//            nprint("\(place). \(state). totallWord => \(words[currentWordIndex]); frameWord=> \(currentFrame[currentWordIndexInFrame])")
+//        }
     }
 
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {

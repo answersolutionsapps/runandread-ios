@@ -15,13 +15,51 @@ class BookSettingsViewModel: ObservableObject {
     @Published var textPreview: String = "..."
     @Published var contextText: [String] = []
     @Published var isPresentingConfirm: Bool = false
-    @Published var defaultLanguage: Locale = Locale.current
     @Published var selectedLanguage: Locale = Locale.current
     @Published var selectedVoice: AVSpeechSynthesisVoice = AVSpeechSynthesisVoice(language: Locale.current.identifier) ?? AVSpeechSynthesisVoice()
     @Published var defaultVoiceRate: Float = 0.5
     @Published var selectedPart: Int = 0
     @Published var showLanguagePicker: Bool = false
     @Published var showVoicePicker: Bool = false
+    
+    func onSelectVoice(voice: AVSpeechSynthesisVoice) {
+        selectedVoice = voice
+        if let voiceRate = bookManager.currentBook?.voiceRate {
+            defaultVoiceRate = voiceRate
+        }
+    }
+    
+    func onSelectLanguage(language: Locale) {
+        selectedLanguage = language
+        if let voiceRate = bookManager.currentBook?.voiceRate {
+            defaultVoiceRate = voiceRate
+        }
+        
+        var availableVoices: [AVSpeechSynthesisVoice] {
+            return AVSpeechSynthesisVoice.speechVoices().filter {
+                if let voice_lang = $0.language.split(separator: "-").first {
+                    if selectedLanguage.identifier.hasPrefix(voice_lang) {
+                        return true
+                    } else {
+                        return false
+                    }
+                } else {
+                    return false
+                }
+            }
+        }
+        if availableVoices.isEmpty == false, let firstVoice = availableVoices.first {
+            selectedVoice = firstVoice
+        }
+    }
+    
+    @MainActor func onShowLanguagePicker(){
+        showLanguagePicker = true
+    }
+    
+    @MainActor func onShowVoicePicker(){
+        showVoicePicker = true
+    }
 
     private var bookManager: BookManager
     private var simplePlayer: SimpleTTSPlayer
@@ -35,20 +73,18 @@ class BookSettingsViewModel: ObservableObject {
 
     func loadSelectedVoice() {
         if let language = bookManager.currentBook?.language {
-            defaultLanguage = language
+            selectedLanguage = language
         }
 
         if let voice = bookManager.currentBook?.voice {
             selectedVoice = voice
         } else {
-            selectedVoice = AVSpeechSynthesisVoice(language: defaultLanguage.identifier) ?? AVSpeechSynthesisVoice()
+            selectedVoice = AVSpeechSynthesisVoice(language: selectedLanguage.identifier) ?? AVSpeechSynthesisVoice()
         }
 
         if let voiceRate = bookManager.currentBook?.voiceRate {
             defaultVoiceRate = voiceRate
         }
-
-        selectedLanguage = defaultLanguage
     }
 
     func saveBook() {
@@ -132,7 +168,7 @@ class BookSettingsViewModel: ObservableObject {
     }
 
     func languageString() -> String {
-        return defaultLanguage.localizedString(forLanguageCode: defaultLanguage.identifier) ?? "Unknown"
+        return selectedLanguage.localizedString(forLanguageCode: selectedLanguage.identifier) ?? "Unknown"
     }
 
     func onCancel() {

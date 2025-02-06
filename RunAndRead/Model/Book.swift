@@ -126,10 +126,10 @@ class Book: ObservableObject, Codable, Identifiable, Hashable {
                 self.totalTime = totalSeconds.formatSecondsToHMS()
                 self.isCompleted = self.lastPosition + 1 >= words.count
                 
-                nprint("self.lastPosition=>\(self.lastPosition)")
-                nprint("words.count=>\(words.count)")
-                nprint("self.progressTime=>\(self.progressTime)")
-                nprint("words.totalTime=>\(self.totalTime)")
+//                nprint("self.lastPosition=>\(self.lastPosition)")
+//                nprint("words.count=>\(words.count)")
+//                nprint("self.progressTime=>\(self.progressTime)")
+//                nprint("words.totalTime=>\(self.totalTime)")
                 self.isCalculating = false
                 completed()
             }

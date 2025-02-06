@@ -34,7 +34,7 @@ struct BookSettingsView: View {
                     Text("Language")
                             .font(.headline)
                     Button(action: {
-                        viewModel.showLanguagePicker = true
+                        viewModel.onShowLanguagePicker()
                     }) {
                         Text(viewModel.languageString())
                                 .font(.body)
@@ -65,7 +65,7 @@ struct BookSettingsView: View {
                             .frame(maxWidth: .infinity)
 
                     Button(action: {
-                        viewModel.showVoicePicker = true
+                        viewModel.onShowVoicePicker()
                     }, label: {
                         Text(String(format: "\(viewModel.selectedVoice.name) (%.2f)", viewModel.defaultVoiceRate.playbackRateToSpeed()))
                                 .font(.body)
@@ -76,7 +76,7 @@ struct BookSettingsView: View {
                                 )
                     })
                             .sheet(isPresented: $viewModel.showVoicePicker) {
-                                VoicePicker(selectedVoice: $viewModel.selectedVoice, selectedLanguage: viewModel.defaultLanguage)
+                                VoicePicker(viewModel: viewModel)
                             }
                     Divider()
                     VStack {
@@ -164,7 +164,7 @@ struct BookSettingsView: View {
                             })
                     )
                     .sheet(isPresented: $viewModel.showLanguagePicker) {
-                        LanguagePicker(selectedLanguage: $viewModel.selectedLanguage)
+                        LanguagePicker(viewModel: viewModel)
                     }
         }
     }

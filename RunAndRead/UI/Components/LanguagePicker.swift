@@ -31,7 +31,7 @@ struct LimitedDictionary {
 struct LanguagePicker: View {
     var title = "Select the main language of this book"
     @Environment(\.presentationMode) var presentationMode
-    @Binding var selectedLanguage: Locale
+    @StateObject var viewModel: BookSettingsViewModel
     
     @State private var recentSelections = LimitedDictionary(limit: 5)
     @State private var testedLanguages: [Locale] = []
@@ -69,14 +69,14 @@ struct LanguagePicker: View {
                         Section(header: Text("Recent Selections")) {
                             ForEach(testedLanguages, id: \.identifier) { language in
                                 Button(action: {
-                                    selectedLanguage = language
+                                    viewModel.onSelectLanguage(language: language)
                                     presentationMode.wrappedValue.dismiss()
                                 }) {
                                     HStack {
                                         Text(languageString(locale: language))
                                             .font(.title2)
                                         Spacer()
-                                        if language == selectedLanguage {
+                                        if language == viewModel.selectedLanguage {
                                             Image(systemName: "checkmark")
                                         }
                                     }
@@ -89,7 +89,7 @@ struct LanguagePicker: View {
                     Section(header: Text("All Supported Languages")) {
                         ForEach(untestedLanguages, id: \.identifier) { language in
                             Button(action: {
-                                selectedLanguage = language
+                                viewModel.onSelectLanguage(language: language)
                                 setRecentLangSelection(selected: language)
                                 presentationMode.wrappedValue.dismiss()
                             }) {
@@ -97,7 +97,7 @@ struct LanguagePicker: View {
                                     Text(languageString(locale: language))
                                         .font(.title2)
                                     Spacer()
-                                    if language == selectedLanguage {
+                                    if language == viewModel.selectedLanguage {
                                         Image(systemName: "checkmark")
                                     }
                                 }

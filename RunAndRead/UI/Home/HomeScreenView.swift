@@ -104,6 +104,9 @@ struct HomeScreenView: View {
                             .listStyle(.plain)
                 }
             }
+                        if viewModel.isLoading() {
+                            CustomActivityIndicator()
+                        }
         }
                 .sheet(isPresented: $viewModel.showFilePicker) {
                     DocumentPicker { fileURL in
