@@ -9,7 +9,8 @@ import SwiftUI
 
 struct ImageButtonView: View {
     let imageName: String
-    var imageColor: Color = UIConfig.primaryColor
+    var imageColor: Color = .primary
+    var backgroundColor: Color = .surface
     let action: () -> Void
     
     var body: some View {
@@ -22,7 +23,7 @@ struct ImageButtonView: View {
             }
         }
             .background(RoundedRectangle(cornerRadius: UIConfig.normalRadius)
-            .fill(UIConfig.surfaceColor)
+                .fill(backgroundColor)
             .onTapGesture {
                 action()
             }

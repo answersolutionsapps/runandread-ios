@@ -36,8 +36,8 @@ struct HorizontalyScrolledTextView: View {
                         Text(words[index])
                             .font(.title2)
                             .fontWeight(index == (idx - 1) ? .bold : .regular)
-                            .foregroundColor(index == (idx - 1) ? UIConfig.backgroundColor : UIConfig.primaryColor)
-                            .background(index == (idx - 1) ? UIConfig.accentColor : Color.clear)
+                            .foregroundColor(index == (idx - 1) ? .background : .primary)
+                            .background(index == (idx - 1) ? .accentColor : Color.clear)
                             .id(index) // Assign an ID for scrolling
                     }
                 }

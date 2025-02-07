@@ -158,7 +158,7 @@ struct HomeScreenView: View {
     private var aboutButton: some View {
         Button(action: showAbout, label: {
             Image(systemName: "info.square")
-                    .tint(UIConfig.primaryColor)
+                .tint(.primary)
                     .imageScale(.large)
         })
     }
@@ -175,7 +175,7 @@ struct HomeScreenView: View {
             }
         } label: {
             Image(systemName: "plus")
-                    .tint(UIConfig.primaryColor)
+                .tint(.primary)
                     .imageScale(.large)
         }
     }

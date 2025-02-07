@@ -18,7 +18,7 @@ struct BookItemView: View {
     var body: some View {
         HStack(spacing: 0) {
             Rectangle()
-                .fill(item.isCompleted ? Color.accentColor : Color.clear)
+                .fill(item.isCompleted ? .accentColor : Color.clear)
              .frame(width: 10)
              .padding(.leading, 0)
             VStack(alignment: .leading) {
@@ -60,7 +60,7 @@ struct BookItemView: View {
             .padding(.top, 8)
             .padding(.bottom, 8)
         }
-        .background(UIConfig.surfaceColor)
+        .background(.surface)
         .scaleEffect(isPressed ? 0.95 : 1) // Subtle scaling effect
                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed) // Smooth animation
                 .onTapGesture {

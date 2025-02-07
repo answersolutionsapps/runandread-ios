@@ -58,7 +58,7 @@ struct ButtonModifier: ViewModifier {
 
 struct LongButtonView: View {
     let title: String
-    var backgroundColor: Color = UIConfig.primaryColor
+    var backgroundColor: Color = .primary
     var textColor: Color = .white
     
     var body: some View {

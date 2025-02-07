@@ -47,95 +47,102 @@ struct SplashScreenView: View {
     @EnvironmentObject var player: TextToSpeechPlayer
     @State private var path = NavigationPath()
     @State private var showSplash = true
-      
+
     var body: some View {
         NavigationStack(path: $path) {
             if showSplash {
                 splashContent
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                            withAnimation {
-                                showSplash = false
-                                if bookManager.currentBook == nil || bookManager.openedFilePath != nil {
-                                    path.append(AppScreen.home)
-                                } else {
-                                    path.append(AppScreen.player)
+                        .onAppear {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                withAnimation {
+                                    showSplash = false
+                                    if bookManager.currentBook == nil || bookManager.openedFilePath != nil {
+                                        path.append(AppScreen.home)
+                                    } else {
+                                        path.append(AppScreen.player)
+                                    }
                                 }
                             }
                         }
-                    }
             } else {
                 ZStack {
                     Text("No screen available")
-                        .foregroundColor(.gray)
+                            .foregroundColor(.gray)
                 }
-                .navigationDestination(for: AppScreen.self) { screen in
-                    switch screen {
-                    case .home:
-                        HomeScreenView(
-                            viewModel: HomeScreenViewModel(
-                                bookManager: bookManager,
-                                path: $path)
-                        )
-                    case .newBook:
-                        BookSettingsView(
-                            viewModel: BookSettingsViewModel(
-                                path: $path,
-                                bookManager: bookManager,
-                                simplePlayer: simplePlayer)
-                        )
-                    case .player:
-                        BookPlayerView(
-                            viewModel: BookPlayerViewModel(
-                                path: $path,
-                                bookManager: bookManager,
-                                player: player)
-                        )
-                    case .about:
-                        AboutScreenView()
-                    }
-                }
+                        .navigationDestination(for: AppScreen.self) { screen in
+                            switch screen {
+                            case .home:
+                                HomeScreenView(
+                                        viewModel: HomeScreenViewModel(
+                                                bookManager: bookManager,
+                                                path: $path)
+                                )
+                            case .newBook:
+                                BookSettingsView(
+                                        viewModel: BookSettingsViewModel(
+                                                path: $path,
+                                                bookManager: bookManager,
+                                                simplePlayer: simplePlayer)
+                                )
+                            case .player:
+                                BookPlayerView(
+                                        viewModel: BookPlayerViewModel(
+                                                path: $path,
+                                                bookManager: bookManager,
+                                                player: player)
+                                )
+                            case .about:
+                                AboutScreenView()
+                            }
+                        }
             }
         }
     }
-    
+
     private var splashContent: some View {
-        VStack {
-            Spacer()
-            Text("Run & Read")
-                .font(.system(size: 60, design: .rounded))
-                .bold()
-                .foregroundColor(UIConfig.primaryColor)
-                .padding(.top, 84)
-            
-            Text("Your Ultimate Text-to-Speech Player.")
-                .font(.system(size: 24, design: .rounded))
-                .foregroundColor(UIConfig.primaryColor)
-                .multilineTextAlignment(.center)
-                .padding(.bottom, 24)
-            
-            Text("Read with your ears while on the move!")
-                .font(.system(size: 24, design: .rounded))
-                .foregroundColor(UIConfig.primaryColor)
-                .multilineTextAlignment(.center)
-            
-            Spacer()
-            
-            Text("\(Bundle.main.fullVersion)")
-                .font(.system(size: 14, design: .rounded))
-                .foregroundColor(UIConfig.primaryColor)
-        }
-        .task {
-            bookManager.loadCurrentBook {
-                
+        ZStack {
+            Color(.surface)
+                    .edgesIgnoringSafeArea(.all)
+
+            VStack {
+
+                Spacer()
+                Text("Run & Read")
+                        .font(.system(size: 60, design: .rounded))
+                        .bold()
+                        .foregroundColor(.primary)
+                        .padding(.top, 84)
+
+                Text("Your Ultimate Text-to-Speech Player.")
+                        .font(.system(size: 24, design: .rounded))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 24)
+
+                Text("Read with your ears while on the move!")
+                        .font(.system(size: 24, design: .rounded))
+                        .foregroundColor(.primary)
+                        .multilineTextAlignment(.center)
+
+                Spacer()
+
+                Text("\(Bundle.main.fullVersion)")
+                        .font(.system(size: 14, design: .rounded))
+                        .foregroundColor(.primary)
             }
+                    .task {
+                        bookManager.loadCurrentBook {
+
+                        }
+                    }
+                    .padding()
         }
-        .padding()
+
     }
 }
 
 #Preview {
     SplashScreenView()
-        .environmentObject(BookManager())
-        .environmentObject(SimpleTTSPlayer())
+            .environmentObject(BookManager())
+            .environmentObject(SimpleTTSPlayer())
 }

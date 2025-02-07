@@ -114,7 +114,10 @@ struct BookSettingsView: View {
                             }, label: {
                                 LongButtonView(title: "Delete Book", backgroundColor: .red).padding(.top, UIConfig.smallSpace)
                             })
-                            Text("Delete this book from the library").font(.caption).fontWeight(.light).foregroundColor(.red)
+                            Text("Delete this book from the library")
+                                .font(.caption)
+                                .fontWeight(.light)
+                                .foregroundColor(.red)
                         }
                                 .font(.subheadline).frame(maxWidth: .infinity, maxHeight: 150)
                     }
@@ -145,7 +148,7 @@ struct BookSettingsView: View {
                                 Text("Book Settings").font(.title2)
                                 Spacer()
                             }
-                                    .tint(UIConfig.backgroundColor)
+                            .tint(.background)
                         }
                     }
                     .navigationBarBackButtonHidden(true)
@@ -177,7 +180,7 @@ struct BookSettingsView: View {
                 viewModel: BookSettingsViewModel(
                         path: path.projectedValue,
                         bookManager: BookManager(),
-                        simplePlayer: SimpleTTSPlayer()))
+                        simplePlayer: SimpleTTSPlayer())).accentColor(Color("AccentColor"))
     }
 }
 

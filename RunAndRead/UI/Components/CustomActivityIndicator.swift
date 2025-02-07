@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CustomCardView: View {
     let contentView: AnyView
-    var backgroundColor: Color = UIConfig.surfaceColor
+    var backgroundColor: Color = .surface
     var showShadow: Bool = true
     var hasMargin: Bool = true
     var cardMargins: CGFloat = UIConfig.normalSpace
@@ -46,7 +46,7 @@ struct ActivityIndicatorRepresentable: UIViewRepresentable {
     }
     
     func updateUIView(_ uiView: UIActivityIndicatorView, context: Context) {
-        uiView.color = UIColor(UIConfig.primaryColor)
+        uiView.color = UIColor(.primary)
         uiView.startAnimating()
     }
 }

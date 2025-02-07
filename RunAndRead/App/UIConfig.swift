@@ -12,11 +12,6 @@ class UIConfig {
     static let buttonFont2 = UIFont(name: "Avenir-Heavy", size: 20)!
     static let buttonFont = Font.custom("Avenir-Heavy", size: 20)
     
-    static let accentColor: Color = Color("AccentColor")
-    static let primaryColor: Color = Color("Primary")
-    static let surfaceColor: Color = Color("Surface")
-    static let backgroundColor: Color = Color("BackgroundColor")
-    
     static let normalRadius = 10.0
     static let cornerRadiusFixed = 45.0
     

@@ -24,9 +24,8 @@ struct HorizontalPageListView: View {
                             Text("\(pageIndex + 1)")
                                 .font(.headline)
                                 .frame(width: 44, height: 44)
-                                .background(selectedPage == pageIndex ? UIConfig.primaryColor : Color.gray)
+                                .background(selectedPage == pageIndex ? .primary : Color.gray)
                                 .foregroundColor(.white)
-//                                .clipShape(Circle())
                         }
                         .padding(.vertical, 10)
                     }

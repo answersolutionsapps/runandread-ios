@@ -28,7 +28,7 @@ struct SpeechSpeedSelector: View {
                     Text(String(format: "%.2f", speed))
                             .font(.headline)
                             .frame(width: 50, height: 50)
-                            .background(selectedSpeed == speed ? Color.accentColor : Color.gray.opacity(0.3))
+                            .background(selectedSpeed == speed ? .accentColor : Color.gray.opacity(0.3))
                             .foregroundColor(selectedSpeed == speed ? Color.white : .black)
                             .cornerRadius(0)
                             .onTapGesture {
