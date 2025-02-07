@@ -50,7 +50,8 @@ struct ButtonModifier: ViewModifier {
         content
             .modifier(TextModifier(font: font, color: textColor))
             .padding()
-            .frame(width: width, height: height)
+            .frame(height: height)
+            .frame(maxWidth: .infinity)
             .background(color)
             .cornerRadius(0)
     }
@@ -68,5 +69,19 @@ struct LongButtonView: View {
                                          textColor: textColor,
                                          width: UIConfig.actionButtonWidth,
                                          height: UIConfig.actionButtonHeight))
+    }
+}
+
+
+#Preview {
+    VStack {
+        Divider()
+        Button(action: {
+            
+        }) {
+            LongButtonView(title: "Rate the App", backgroundColor: .primary)
+                .frame(maxWidth: .infinity)
+        }
+        .padding()
     }
 }

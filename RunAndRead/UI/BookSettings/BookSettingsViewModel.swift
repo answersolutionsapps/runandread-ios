@@ -25,7 +25,7 @@ class BookSettingsViewModel: ObservableObject {
     func onSelectVoice(voice: AVSpeechSynthesisVoice) {
         selectedVoice = voice
         if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate.speedToplaybackRate()
+            defaultVoiceRate = voiceRate.speedToPlaybackRate()
         } else {
             defaultVoiceRate = 0.5
         }
@@ -34,7 +34,7 @@ class BookSettingsViewModel: ObservableObject {
     func onSelectLanguage(language: Locale) {
         selectedLanguage = language
         if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate.speedToplaybackRate()
+            defaultVoiceRate = voiceRate.speedToPlaybackRate()
         } else {
             defaultVoiceRate = 0.5
         }
@@ -87,7 +87,7 @@ class BookSettingsViewModel: ObservableObject {
         }
 
         if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate.speedToplaybackRate()
+            defaultVoiceRate = voiceRate.speedToPlaybackRate()
         }
     }
 

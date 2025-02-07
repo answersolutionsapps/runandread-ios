@@ -231,7 +231,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
         currentFrame = Array(remainingWords.prefix(100))
         currentWordIndexInFrame = 0
         let utterance = AVSpeechUtterance(string: currentFrame.joined(separator: " "))
-        utterance.rate = speed.speedToplaybackRate()
+        utterance.rate = speed.speedToPlaybackRate()
         utterance.volume = 1.0
         utterance.voice = selectedVoice
         return utterance

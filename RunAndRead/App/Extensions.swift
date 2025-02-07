@@ -39,50 +39,66 @@ extension Double {
 
 extension Float {
     func playbackRateToString() -> String {
-        let roundedValue = (self * 10).rounded() / 10 // Rounds to nearest 0.1
-//        print("Rounded Value: \(roundedValue)")
+        let roundedValue = (self * 100).rounded() / 100 // Rounds to nearest 0.01
         switch roundedValue {
         case 0.7:
-            return "1.5"
-        case 0.6:
+            return "2.00"
+        case 0.65:
+            return "1.75"
+        case 0.60:
+            return "1.50"
+        case 0.55:
             return "1.25"
-        case 0.3:
-            return "0.5"
-        case 0.4:
+        case 0.45:
             return "0.75"
+        case 0.40:
+            return "0.50"
+        case 0.35:
+            return "0.25"
         default:
             return "1.0"
         }
     }
     
     func playbackRateToSpeed() -> Float {
-        let roundedValue = (self * 10).rounded() / 10 // Rounds to nearest 0.1
-//        print("Rounded Value: \(roundedValue)")
+        let roundedValue = (self * 100).rounded() / 100 // Rounds to nearest 0.01
         switch roundedValue {
         case 0.7:
-            return 1.5
-        case 0.6:
+            return 2.0
+        case 0.65:
+            return 1.75
+        case 0.60:
+            return 1.50
+        case 0.55:
             return 1.25
-        case 0.3:
-            return 0.5
-        case 0.4:
+        case 0.45:
             return 0.75
+        case 0.40:
+            return 0.50
+        case 0.35:
+            return 0.25
         default:
             return 1.0
         }
     }
     
-    func speedToplaybackRate() -> Float {
+    func speedToPlaybackRate() -> Float {
         let roundedValue = (self * 100).rounded() / 100 // Rounds to nearest 0.01
         switch roundedValue {
-        case 1.5:
+        case 2.00:
             return 0.7
+        case 1.75:
+            return 0.65
+        case 1.50:
+            return 0.60
         case 1.25:
-            return 0.6
-        case 0.5:
-            return 0.3
+            return 0.55
         case 0.75:
-            return 0.4
+            return 0.45
+        case 0.50:
+            return 0.40
+        case 0.25:
+            return 0.35
         default:
             return 0.5
         }

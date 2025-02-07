@@ -67,48 +67,62 @@ Run & Read is committed to respecting intellectual property rights. Please use t
                         .font(.footnote)
                         .foregroundColor(.secondary)
                     
-                    // Support Button
-                    Button(action: {
-                        let messageToSend = """
-    Run & Read Support/Feedback Report
-    <br><br>
-    ==Report Begins==========<br>
-    Input here your feedback or the details of the issues you have.
-    <br>==Report Ends============
-    <br><br>
-    OS Version: \(ProcessInfo.processInfo.operatingSystemVersionString)
-    <br>
-    Model: \(UIDevice.current.model)
-    <br>
-    App Version: \(Bundle.main.fullVersion)
-    <br>
-    """
-                        EmailService.shared.sendEmail(
-                            subject: "Run & Read Support/Feedback Report",
-                            body: messageToSend,
-                            to: "support@answersolutions.net") { (canSend, sent) in
-                            if !sent {
-                                print("email is not sent")
+                    VStack {
+                        // Support Button
+                        Button(action: {
+                            let messageToSend = """
+        Run & Read Support/Feedback Report
+        <br><br>
+        ==Report Begins==========<br>
+        Input here your feedback or the details of the issues you have.
+        <br>==Report Ends============
+        <br><br>
+        OS Version: \(ProcessInfo.processInfo.operatingSystemVersionString)
+        <br>
+        Model: \(UIDevice.current.model)
+        <br>
+        App Version: \(Bundle.main.fullVersion)
+        <br>
+        """
+                            EmailService.shared.sendEmail(
+                                subject: "Run & Read Support/Feedback Report",
+                                body: messageToSend,
+                                to: "support@answersolutions.net") { (canSend, sent) in
+                                if !sent {
+                                    print("email is not sent")
 
-                            } else {
-                                print("email sent")
+                                } else {
+                                    print("email sent")
 
+                                }
                             }
+                        }) {
+                            
+                            LongButtonView(title: "Report an Issue", backgroundColor: .primary)
+                                .frame(maxWidth: .infinity)
                         }
-                    }) {
-                        
-                        LongButtonView(title: "Report an Issue", backgroundColor: .primary)
-                            .frame(maxWidth: .infinity)
+                        Text("Have an issue, feedback, or suggestion? Send us an email.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
                     }
-                    .padding()
+                    
+
+                    .padding(.horizontal)
                     
                     Divider()
+                    VStack {
                     Button(action: {
                         askForAppRating()
                     }) {
                         LongButtonView(title: "Rate the App", backgroundColor: .primary)
                             .frame(maxWidth: .infinity)
                     }
+                    Text("If you enjoy listening to text with our app, please give us a rating in the App Store.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
                     .padding()
                     
                 }

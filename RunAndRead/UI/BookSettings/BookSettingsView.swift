@@ -59,7 +59,7 @@ struct BookSettingsView: View {
                     VStack(alignment: .center) {
                         SpeechSpeedSelector(defaultSpeed: viewModel.defaultVoiceRate.playbackRateToSpeed()) { newSpeed in
                             print("Selected speed: \(newSpeed)")
-                            viewModel.defaultVoiceRate = newSpeed.speedToplaybackRate()
+                            viewModel.defaultVoiceRate = newSpeed.speedToPlaybackRate()
                         }
                     }
                             .frame(maxWidth: .infinity)
