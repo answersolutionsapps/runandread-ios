@@ -78,7 +78,7 @@ struct BookPlayerView: View {
         return VStack {
             HStack(spacing: 40) {
                 Button(action: { viewModel.onRewind() }) {
-                    Image(systemName: "gobackward.5")
+                    Image(systemName: "gobackward.30")
                             .font(.largeTitle)
                 }
                         .accessibilityLabel("Rewind 5 seconds")
@@ -88,7 +88,7 @@ struct BookPlayerView: View {
                 }
                         .accessibilityLabel("Play and Pause")
                 Button(action: { viewModel.onFastForward() }) {
-                    Image(systemName: "goforward.5")
+                    Image(systemName: "goforward.30")
                             .font(.largeTitle)
                 }
                         .accessibilityLabel("Fastforward 5 seconds")
