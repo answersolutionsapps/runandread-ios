@@ -34,7 +34,7 @@ struct LanguagePicker: View {
     @StateObject var viewModel: BookSettingsViewModel
     
     @State private var recentSelections = LimitedDictionary(limit: 5)
-    @State private var testedLanguages: [Locale] = []
+    @State private var recentlySelectedLanguages: [Locale] = []
     @State private var untestedLanguages: [Locale] = []
     @State private var supportedLanguages: [Locale] = []
     
@@ -65,9 +65,9 @@ struct LanguagePicker: View {
                     .multilineTextAlignment(.leading)
                 
                 List {
-                    if !testedLanguages.isEmpty {
+                    if !recentlySelectedLanguages.isEmpty {
                         Section(header: Text("Recent Selections")) {
-                            ForEach(testedLanguages, id: \.identifier) { language in
+                            ForEach(recentlySelectedLanguages, id: \.identifier) { language in
                                 Button(action: {
                                     viewModel.onSelectLanguage(language: language)
                                     presentationMode.wrappedValue.dismiss()
@@ -75,12 +75,14 @@ struct LanguagePicker: View {
                                     HStack {
                                         Text(languageString(locale: language))
                                             .font(.title2)
+                                            
                                         Spacer()
                                         if language == viewModel.selectedLanguage {
-                                            Image(systemName: "checkmark")
+                                            Image(systemName: "checkmark").tint(.accentColor)
                                         }
                                     }
                                 }
+                                .tint(.accentColor)
                                 .padding(.vertical, UIConfig.smallSpace)
                             }
                         }
@@ -96,9 +98,10 @@ struct LanguagePicker: View {
                                 HStack {
                                     Text(languageString(locale: language))
                                         .font(.title2)
+                                        .tint(.accentColor)
                                     Spacer()
                                     if language == viewModel.selectedLanguage {
-                                        Image(systemName: "checkmark")
+                                        Image(systemName: "checkmark").tint(.accentColor)
                                     }
                                 }
                             }
@@ -117,12 +120,24 @@ struct LanguagePicker: View {
                 if let savedSelections = UserDefaults.standard.stringArray(forKey: "recentSelections") {
                     savedSelections.forEach { recentSelections.push(value: $0) }
                 }
-                testedLanguages = recentOptions()
+                recentlySelectedLanguages = recentOptions()
                 untestedLanguages = supportedLanguages.sorted { languageString(locale: $0) < languageString(locale: $1) }
             }
             .navigationBarItems(trailing: Button("Cancel") {
                 presentationMode.wrappedValue.dismiss()
-            })
-        }
+            }.font(UIConfig.buttonFont).tint(.accentColor))
+        }.accentColor(Color("AccentColor"))
+    }
+}
+
+
+#Preview {
+    NavigationView {
+        let path = State(initialValue: NavigationPath())
+        LanguagePicker(
+                viewModel: BookSettingsViewModel(
+                        path: path.projectedValue,
+                        bookManager: BookManager(),
+                        simplePlayer: SimpleTTSPlayer())).accentColor(Color("AccentColor"))
     }
 }

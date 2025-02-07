@@ -11,7 +11,7 @@ import AVFoundation
 struct VoicePicker: View {
     @Environment(\.presentationMode) var presentationMode
     @StateObject var viewModel: BookSettingsViewModel
-//    var selectedLanguage: Locale
+    @State var oldVoice: AVSpeechSynthesisVoice? = nil
 
     var availableVoices: [AVSpeechSynthesisVoice] {
         print("selectedLanguage=\(viewModel.selectedLanguage.identifier)")
@@ -41,28 +41,59 @@ struct VoicePicker: View {
     var body: some View {
         NavigationView {
             VStack {
-//                Text("A voice that assistant will speak to you").font(.title)
-                Text("Assistant Voice").font(.title2)
-                    .multilineTextAlignment(.leading)
                 List(availableVoices, id: \.identifier) { voice in
-                    Button(action: {
-                        viewModel.onSelectVoice(voice: voice)
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
                         HStack {
-                            Text(voiceString(voice: voice)).font(.title2)
+                            Text(voiceString(voice: voice))
+                                .foregroundColor(voice == viewModel.selectedVoice ? .surface: .accent)
+                                .font(.title2)
                             Spacer()
-                            if voice == viewModel.selectedVoice {
-                                Image(systemName: "checkmark")
-                            }
+                            ImageButtonView(
+                                    imageName: "play.circle.fill",
+                                    imageColor: voice == viewModel.selectedVoice ? .surface: .accent,
+                                    action: {
+                                        viewModel.onSelectVoice(voice: voice)
+                                        viewModel.onPlayPauseText2()
+                                    }
+                            )
                         }
-                    }.padding()
-                }.listStyle(.plain)
+                        .listRowSpacing(0)
+                        .listRowInsets(EdgeInsets(top:1, leading:16,bottom:1,trailing:8))
+                        .listRowSeparator(.hidden)
+                        .padding(12)
+                        .background(voice == viewModel.selectedVoice ? .accent: .surface)
+                }
+                .listStyle(.plain)
             }
-//            .navigationBarTitle("Assistant Voice", displayMode: .large)
-            .navigationBarItems(trailing: Button("Cancel") {
+            .onAppear{
+                self.oldVoice = viewModel.selectedVoice
+            }
+            .navigationBarTitle("Select Voice", displayMode: .large)
+            .navigationBarItems(leading: Button("Cancel") {
+                if let v = self.oldVoice {
+                    viewModel.onSelectVoice(voice: v)
+                    presentationMode.wrappedValue.dismiss()
+                } else {
+//                    error
+                }
+            }.font(UIConfig.buttonFont)
+                                ,trailing: Button("Save") {
                 presentationMode.wrappedValue.dismiss()
-            })
-        }
+            }.font(UIConfig.buttonFont)
+                .disabled(oldVoice == viewModel.selectedVoice)
+            
+            )
+        }.accentColor(Color("AccentColor"))
+    }
+}
+
+
+#Preview {
+    NavigationView {
+        let path = State(initialValue: NavigationPath())
+        VoicePicker(
+                viewModel: BookSettingsViewModel(
+                        path: path.projectedValue,
+                        bookManager: BookManager(),
+                        simplePlayer: SimpleTTSPlayer()))
     }
 }

@@ -44,9 +44,30 @@ extension TextToSpeechPlayer {
     func updateNowPlayingInfo() {
         var nowPlayingInfo = [String: Any]()
         nowPlayingInfo[MPMediaItemPropertyTitle] = title
-        nowPlayingInfo[MPMediaItemPropertyArtist] = "Run & Read"
-
+        nowPlayingInfo[MPMediaItemPropertyArtist] = author
+        nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+        nowPlayingInfo[MPMediaItemPropertySkipCount] = "30"
+        
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    }
+    
+    func updateProgressNowPlayingInfo() {
+        var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
+       
+        
+//        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        
+        let totalDuration: TimeInterval = 180.0 // Replace with actual track duration
+        nowPlayingInfo?[MPMediaItemPropertyPlaybackDuration] = totalDuration
+        
+        // Update every second (or based on playback progress)
+//        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+//            // Assuming currentPlaybackTime is updated by your media player
+//            currentPlaybackTime += 1.0 // Increment the playback time (this will be updated dynamically)
+//
+//            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentPlaybackTime
+//            MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+//        }
     }
 }
 
@@ -68,11 +89,18 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
     private var progressCallback: ((String, Int, [String], Int) -> Void)? // Callback for progress updates
     private var onAddBookmarkCallback: (() -> Void)? // Callback for progress updates
 
+    private var author: String = ""
     private var title: String = ""
+    private var artwork : MPMediaItemArtwork? = nil
 
     override init() {
         super.init()
         AVSpeechSynthesisVoice.speechVoices() // <--  fetch voice dependencies
+        if let albumCoverImage = UIImage(named: "albumCover") {
+                    artwork = MPMediaItemArtwork(boundsSize: albumCoverImage.size) { size in
+                        return albumCoverImage
+                    }
+                }
         setupRemoteTransportControls()
     }
 
@@ -104,6 +132,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
             self.defaultLanguage = book.language
             self.selectedVoice = book.voice
             self.speed = book.voiceRate
+            self.author = book.author
             self.title = book.title
 
 //            nprint("loadSelectedVoice().defaultLanguage=>\(defaultLanguage.identifier).")
@@ -153,6 +182,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
         if state == .playing {
             synthesizer.pauseSpeaking(at: .immediate)
             state = .pause
+            
         } else {
             do {
                 try configureAudioSession()
@@ -166,8 +196,8 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
             } catch {
                 nprint("Error configuring audio session: \(error.localizedDescription)")
             }
-            updateNowPlayingInfo()
         }
+        updateNowPlayingInfo()
     }
 
     func isPlaying() -> Bool {
@@ -182,7 +212,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
 
     func fastForward() {
         synthesizer.stopSpeaking(at: .immediate)
-        currentWordIndex = min(currentWordIndex + 5, words.count - 1)
+        currentWordIndex = min(currentWordIndex + 60, words.count - 1) //about 30 secunds
         updateProgress()
         state = .idle
         playPause()
@@ -190,7 +220,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
 
     func rewind() {
         synthesizer.stopSpeaking(at: .immediate)
-        currentWordIndex = max(currentWordIndex - 5, 0)
+        currentWordIndex = max(currentWordIndex - 60, 0)//about 30 secunds
         updateProgress()
         state = .idle
         playPause()
@@ -284,5 +314,6 @@ extension TextToSpeechPlayer: @preconcurrency AVSpeechSynthesizerDelegate {
 
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didPause utterance: AVSpeechUtterance) {
         state = .pause
+        updateNowPlayingInfo()
     }
 }

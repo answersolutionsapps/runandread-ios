@@ -25,14 +25,18 @@ class BookSettingsViewModel: ObservableObject {
     func onSelectVoice(voice: AVSpeechSynthesisVoice) {
         selectedVoice = voice
         if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate
+            defaultVoiceRate = voiceRate.speedToplaybackRate()
+        } else {
+            defaultVoiceRate = 0.5
         }
     }
     
     func onSelectLanguage(language: Locale) {
         selectedLanguage = language
         if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate
+            defaultVoiceRate = voiceRate.speedToplaybackRate()
+        } else {
+            defaultVoiceRate = 0.5
         }
         
         var availableVoices: [AVSpeechSynthesisVoice] {
@@ -83,7 +87,7 @@ class BookSettingsViewModel: ObservableObject {
         }
 
         if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate
+            defaultVoiceRate = voiceRate.speedToplaybackRate()
         }
     }
 
@@ -94,7 +98,7 @@ class BookSettingsViewModel: ObservableObject {
             book.author = author
             book.language = selectedLanguage
             book.voice = selectedVoice
-            book.voiceRate = defaultVoiceRate
+            book.voiceRate = defaultVoiceRate.playbackRateToSpeed()
             book.text = Array(contextText.suffix(from: safeIndex))
 
             bookManager.saveBookToLibrary(book: book) { result in
@@ -112,7 +116,7 @@ class BookSettingsViewModel: ObservableObject {
                     author: author,
                     language: selectedLanguage,
                     voiceIdentifier: selectedVoice.identifier,
-                    voiceRate: defaultVoiceRate,
+                    voiceRate: defaultVoiceRate.playbackRateToSpeed(),
                     text: Array(contextText.suffix(from: safeIndex).map {
                         "\($0). "
                     }),
@@ -179,7 +183,13 @@ class BookSettingsViewModel: ObservableObject {
 
     func onPlayPauseText() {
         let text = textPreview.substringTwoSentences()
-        simplePlayer.startTextToSpeech(text: text, voice: selectedVoice, rate: defaultVoiceRate)
+        let r = defaultVoiceRate
+        simplePlayer.startTextToSpeech(text: text, voice: selectedVoice, rate: r)
+    }
+    
+    func onPlayPauseText2(rate: Float = 0.5) {
+        let text = textPreview.substringTwoSentences()
+        simplePlayer.startTextToSpeech(text: text, voice: selectedVoice, rate: rate)
     }
 
     //---Delete
