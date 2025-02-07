@@ -96,16 +96,21 @@ Run & Read is committed to respecting intellectual property rights. Please use t
                             }
                         }
                     }) {
-                        Text("Report an Issue")
-                            .font(.headline)
+                        
+                        LongButtonView(title: "Report an Issue", backgroundColor: .primary)
                             .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(UIConfig.primaryColor)
-                            .foregroundColor(.white)
-//                            .cornerRadius(8)
-                    }.padding()
+                    }
+                    .padding()
                     
-                    Spacer()
+                    Divider()
+                    Button(action: {
+                        askForAppRating()
+                    }) {
+                        LongButtonView(title: "Rate the App", backgroundColor: .primary)
+                            .frame(maxWidth: .infinity)
+                    }
+                    .padding()
+                    
                 }
                 .padding()
             }

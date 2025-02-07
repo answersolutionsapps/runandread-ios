@@ -6,6 +6,15 @@
 //
 
 import SwiftUI
+import StoreKit
+
+
+func askForAppRating() {
+    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+        SKStoreReviewController.requestReview(in: windowScene)
+            
+    }
+}
 
 @main
 struct RunAndReadApp: App {
@@ -15,6 +24,7 @@ struct RunAndReadApp: App {
     var body: some Scene {
         WindowGroup {
             SplashScreenView()
+                .accentColor(Color("AccentColor"))
                 .environmentObject(bookManager)
                 .environmentObject(simplePlayer)
                 .environmentObject(textToSpeechPlayer)
