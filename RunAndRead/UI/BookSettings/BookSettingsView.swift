@@ -20,16 +20,39 @@ struct BookSettingsView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Title")
                             .font(.headline)
-                    TextField("Enter title", text: $viewModel.title)
-                            .textFieldStyle(DefaultTextFieldStyle())
-                            .font(.title2)
-                            .padding(.bottom, 10)
+                    
+                    HStack {
+                        TextField("Enter title", text: $viewModel.title)
+                                .textFieldStyle(DefaultTextFieldStyle())
+                                .font(.title2)
+                                .padding(.bottom, 10)
+                        
+                        if !viewModel.title.isEmpty {
+                            Button(action: {
+                                viewModel.title = ""
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                            }.padding(.trailing, 8)
+                        }
+                    }
 
                     Text("Author")
                             .font(.headline)
-                    TextField("Enter author", text: $viewModel.author)
+                    HStack {
+                        TextField("Enter author", text: $viewModel.author)
                             .textFieldStyle(DefaultTextFieldStyle())
                             .font(.title2)
+                        
+                        if !viewModel.author.isEmpty {
+                            Button(action: {
+                                viewModel.author = ""
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(.gray)
+                            }.padding(.trailing, 8)
+                        }
+                    }
                     Divider()
                     Text("Language")
                             .font(.headline)
@@ -80,12 +103,12 @@ struct BookSettingsView: View {
                             }
                     Divider()
                     VStack {
-                        Text("Text Preview")
+                        Text("Pick First Page to Read")
                                 .font(.headline)
                         HorizontalPageListView(selectedPage: $viewModel.selectedPart, totalPages: viewModel.contextText.count) { newPageIndex in
                             viewModel.onPageChanged(newPageIndex: newPageIndex)
                         }
-                        Text("Read from page: \(viewModel.selectedPart + 1)")
+                        Text("Start Reading From Page: \(viewModel.selectedPart + 1)")
                         Divider()
                         TextEditor(text: $viewModel.textPreview)
                                 .font(.body)

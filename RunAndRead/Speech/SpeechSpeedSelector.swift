@@ -16,7 +16,7 @@ struct SpeechSpeedSelector: View {
     init(defaultSpeed: Float, onSpeedSelected: @escaping (Float) -> Void) {
         _selectedSpeed = State(initialValue: defaultSpeed)
         self.onSpeedSelected = onSpeedSelected
-        nprint("_selectedSpeed=>\(_selectedSpeed)")
+//        nprint("_selectedSpeed=>\(_selectedSpeed)")
     }
 
     var body: some View {

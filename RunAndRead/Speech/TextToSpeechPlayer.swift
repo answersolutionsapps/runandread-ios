@@ -46,28 +46,18 @@ extension TextToSpeechPlayer {
         nowPlayingInfo[MPMediaItemPropertyTitle] = title
         nowPlayingInfo[MPMediaItemPropertyArtist] = author
         nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
-        nowPlayingInfo[MPMediaItemPropertySkipCount] = "30"
+        nowPlayingInfo[MPMediaItemPropertySkipCount] = 30
+        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = totalTime
         
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
     
     func updateProgressNowPlayingInfo() {
-        var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo
-       
-        
-//        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
-        
-        let totalDuration: TimeInterval = 180.0 // Replace with actual track duration
-        nowPlayingInfo?[MPMediaItemPropertyPlaybackDuration] = totalDuration
-        
-        // Update every second (or based on playback progress)
-//        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-//            // Assuming currentPlaybackTime is updated by your media player
-//            currentPlaybackTime += 1.0 // Increment the playback time (this will be updated dynamically)
-//
-//            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentPlaybackTime
-//            MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
-//        }
+        guard var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo else { return }
+            
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = indexToElapsedSeconds()
+            
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
 }
 
@@ -82,6 +72,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
     @Published var currentFrame: [String] = []
     @Published private var currentWordIndex = 0
     @Published var currentWordIndexInFrame = 0
+    @Published var totalTime: TimeInterval = 0
     @Published var totalTimeString: String = "00:00"// In seconds
     @Published var totalWords: Int = 0 // In seconds
     @Published var state: PlayerState = .undefined
@@ -141,18 +132,18 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
             defineCurrentWordIndex(value: book.lastPosition)
 
             // Approximate seconds per word based on speech rate
-            let totalTime = (Double(words.joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(speed)
+            self.totalTime = (Double(words.joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(speed)
             self.totalWords = words.count
             self.totalTimeString = totalTime.formatSecondsToHMS()
 //            nprint("book.lastPosition=>\(book.lastPosition)")
 //            nprint("words.count=>\(words.count)")
 //            nprint("book.lastPosition=>\(currentWordIndex)")
 
-            onSetUp(true, indexToElapsedSeconds(), currentWordIndex, currentFrame, currentWordIndexInFrame)
+            onSetUp(true, indexToElapsedSeconds().formatSecondsToHMS(), currentWordIndex, currentFrame, currentWordIndexInFrame)
             state = .idle
         } else {
             nprint("setup.error currentBook is not defined.")
-            onSetUp(false, indexToElapsedSeconds(), currentWordIndex, currentFrame, currentWordIndexInFrame)
+            onSetUp(false, indexToElapsedSeconds().formatSecondsToHMS(), currentWordIndex, currentFrame, currentWordIndexInFrame)
         }
     }
     
@@ -207,7 +198,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
     func defineCurrentWordIndex(value: Int, updateLabel: ((String) -> Void)? = nil) {
         currentWordIndex = min(value, words.count - 1)
         currentWordIndex = max(currentWordIndex, 0)
-        updateLabel?(indexToElapsedSeconds())
+        updateLabel?(indexToElapsedSeconds().formatSecondsToHMS())
     }
 
     func fastForward() {
@@ -254,15 +245,16 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
         }
     }
 
-    private func indexToElapsedSeconds() -> String {
+    private func indexToElapsedSeconds() -> TimeInterval {
         let elapsedSeconds = (Double(words.prefix(currentWordIndex).joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.speed)
-        return elapsedSeconds.formatSecondsToHMS()
+        return elapsedSeconds
     }
 
     func updateProgress() {
         if currentWordIndex < words.count && currentWordIndex > -1 {
-            progressCallback?(indexToElapsedSeconds(), currentWordIndex, currentFrame, currentWordIndexInFrame)
+            progressCallback?(indexToElapsedSeconds().formatSecondsToHMS(), currentWordIndex, currentFrame, currentWordIndexInFrame)
         }
+        updateProgressNowPlayingInfo()
     }
 
     private func configureAudioSession() throws {
