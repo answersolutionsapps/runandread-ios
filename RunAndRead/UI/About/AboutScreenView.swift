@@ -134,5 +134,5 @@ Run & Read is committed to respecting intellectual property rights. Please use t
 }
 
 #Preview {
-    AboutScreenView()
+    AboutScreenView().preferredColorScheme(.dark)
 }

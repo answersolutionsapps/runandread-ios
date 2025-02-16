@@ -8,6 +8,11 @@
 import SwiftUI
 import UIKit
 
+extension Color {
+    static let primary = Color("Primary")
+//    static let surface = Color("Surface")
+}
+
 class UIConfig {
     static let buttonFont2 = UIFont(name: "Avenir-Heavy", size: 20)!
     static let buttonFont = Font.custom("Avenir-Heavy", size: 20)

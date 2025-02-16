@@ -60,7 +60,7 @@ struct ButtonModifier: ViewModifier {
 struct LongButtonView: View {
     let title: String
     var backgroundColor: Color = .primary
-    var textColor: Color = .white
+    var textColor: Color = .surface
     
     var body: some View {
         Text(title)

@@ -203,7 +203,7 @@ struct BookSettingsView: View {
                 viewModel: BookSettingsViewModel(
                         path: path.projectedValue,
                         bookManager: BookManager(),
-                        simplePlayer: SimpleTTSPlayer())).accentColor(Color("AccentColor"))
+                        simplePlayer: SimpleTTSPlayer())).accentColor(Color("AccentColor")).preferredColorScheme(.dark)
     }
 }
 

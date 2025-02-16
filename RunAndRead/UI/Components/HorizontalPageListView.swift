@@ -25,7 +25,7 @@ struct HorizontalPageListView: View {
                                 .font(.headline)
                                 .frame(width: 44, height: 44)
                                 .background(selectedPage == pageIndex ? .primary : Color.gray)
-                                .foregroundColor(.white)
+                                .foregroundColor(.surface)
                         }
                         .padding(.vertical, 10)
                     }

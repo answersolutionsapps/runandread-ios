@@ -30,7 +30,7 @@ struct SpeechSpeedSelector: View {
                                 .font(.headline)
                                 .frame(width: 50, height: 50)
                                 .background(selectedSpeed == speed ? .accentColor : Color.gray.opacity(0.3))
-                                .foregroundColor(selectedSpeed == speed ? Color.white : .black)
+                                .foregroundColor(selectedSpeed == speed ? .surface : .primary)
                                 .cornerRadius(0)
                                 .onTapGesture {
                                     selectedSpeed = speed
@@ -48,5 +48,5 @@ struct SpeechSpeedSelector: View {
 #Preview {
     SpeechSpeedSelector(defaultSpeed: 1.0) { newSpeed in
         print("Selected speed: \(newSpeed)")
-    }
+    }.preferredColorScheme(.dark)
 }
