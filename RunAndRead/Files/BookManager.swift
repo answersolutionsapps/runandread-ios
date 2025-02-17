@@ -200,6 +200,7 @@ class BookManager: ObservableObject {
 
     func updateLastPosition(for bookId: String, newPosition: Int) {
         currentBook?.lastPosition = newPosition
+        currentBook?.created = Date.now
     }
 
     func persist(completion: @escaping (Result<URL, Error>) -> Void) {
@@ -326,36 +327,43 @@ class BookManager: ObservableObject {
     }
 
     func loadText(from fileURL: URL, onLoaded: @escaping (BookFile?) -> Void) {
-        inProgress = true
-        FileTextExtractor.extractText(from: fileURL)
-                .receive(on: DispatchQueue.main)
-                .sink(receiveCompletion: { completion in
-                    if case .failure(let error) = completion {
-                        print("Error extracting text: \(error)")
-                        onLoaded(nil) // Pass nil to signal failure
-                        self.inProgress = false
-                    }
-                }, receiveValue: { bookFile in
-                    onLoaded(bookFile)
-                    self.inProgress = false
-                })
-                .store(in: &cancellables)
+//        DispatchQueue.main.async {
+//            self.inProgress = true
+//        }
+        DispatchQueue.global(qos: .background).async {
+            FileTextExtractor.extractText(from: fileURL)
+                    .receive(on: DispatchQueue.main)
+                    .sink(receiveCompletion: { completion in
+                        if case .failure(let error) = completion {
+                            print("Error extracting text: \(error)")
+                            onLoaded(nil) // Pass nil to signal failure
+//                            self.inProgress = false
+                        }
+                    }, receiveValue: { bookFile in
+//                        TimeLogger.log("onFileSelected", message: "FileTextExtractor.onLoaded")
+                        onLoaded(bookFile)
+//                        self.inProgress = false
+                    })
+                    .store(in: &self.cancellables)
+        }
     }
 
     func loadText2(from fileURL: URL, onLoaded: @escaping (BookFile?) -> Void) {
         inProgress = true
-        FileTextExtractor.extractTextFromWeb(from: fileURL)
+        DispatchQueue.global(qos: .background).async {
+            FileTextExtractor.extractTextFromWeb(from: fileURL)
                 .receive(on: DispatchQueue.main)
                 .sink(receiveCompletion: { completion in
                     if case .failure(let error) = completion {
                         print("Error extracting text: \(error)")
                         onLoaded(nil) // Pass nil to signal failure
-                        self.inProgress = false
+//                        self.inProgress = false
                     }
                 }, receiveValue: { bookFile in
                     onLoaded(bookFile)
-                    self.inProgress = false
+//                    self.inProgress = false
                 })
-                .store(in: &cancellables)
+                .store(in: &self.cancellables)
+        }
     }
 }
