@@ -326,7 +326,7 @@ class BookManager: ObservableObject {
         }
     }
 
-    func loadText(from fileURL: URL, onLoaded: @escaping (BookFile?) -> Void) {
+    func loadText(from fileURL: URL, onLoaded: @escaping (BookFile?, String?) -> Void) {
 //        DispatchQueue.main.async {
 //            self.inProgress = true
 //        }
@@ -336,19 +336,19 @@ class BookManager: ObservableObject {
                     .sink(receiveCompletion: { completion in
                         if case .failure(let error) = completion {
                             print("Error extracting text: \(error)")
-                            onLoaded(nil) // Pass nil to signal failure
+                            onLoaded(nil, "Error extracting text: \(error)") // Pass nil to signal failure
 //                            self.inProgress = false
                         }
                     }, receiveValue: { bookFile in
 //                        TimeLogger.log("onFileSelected", message: "FileTextExtractor.onLoaded")
-                        onLoaded(bookFile)
+                        onLoaded(bookFile, nil)
 //                        self.inProgress = false
                     })
                     .store(in: &self.cancellables)
         }
     }
 
-    func loadText2(from fileURL: URL, onLoaded: @escaping (BookFile?) -> Void) {
+    func loadText2(from fileURL: URL, onLoaded: @escaping (BookFile?, String?) -> Void) {
         inProgress = true
         DispatchQueue.global(qos: .background).async {
             FileTextExtractor.extractTextFromWeb(from: fileURL)
@@ -356,11 +356,11 @@ class BookManager: ObservableObject {
                 .sink(receiveCompletion: { completion in
                     if case .failure(let error) = completion {
                         print("Error extracting text: \(error)")
-                        onLoaded(nil) // Pass nil to signal failure
+                        onLoaded(nil, "Error extracting text: \(error)") // Pass nil to signal failure
 //                        self.inProgress = false
                     }
                 }, receiveValue: { bookFile in
-                    onLoaded(bookFile)
+                    onLoaded(bookFile, nil)
 //                    self.inProgress = false
                 })
                 .store(in: &self.cancellables)

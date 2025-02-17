@@ -76,7 +76,7 @@ class FileTextExtractor {
         let strippedSections: [String] = [
             "title", "section", "cover", "colophon", "imprint", "endnote", "copyright"
         ]
-
+//        TimeLogger.log("onFileSelected", message: "extractContent1")
         return contentFiles
                 .filter { url in
                     let lastPathComponent = url.deletingPathExtension().lastPathComponent.lowercased()
@@ -101,6 +101,7 @@ class FileTextExtractor {
     }
 
     static func extractTextFromEPUB(_ fileURL: URL) throws -> BookFile {
+//        TimeLogger.log("onFileSelected", message: "extractTextFromEPUB")
         guard !fileURL.absoluteString.contains(" ") else {
             throw NSError(domain: "FileError", code: 236, userInfo: [NSLocalizedDescriptionKey: "Spaces in file name"])
         }
@@ -108,7 +109,7 @@ class FileTextExtractor {
         guard let document = EPUBDocument(url: fileURL) else {
             throw NSError(domain: "EPUBError", code: 235, userInfo: [NSLocalizedDescriptionKey: "Broken EPUB document"])
         }
-
+//        TimeLogger.log("onFileSelected", message: "BookFile")
         let book = BookFile(
                 title: document.title ?? "Unknown",
                 author: document.author ?? "Unknown",
@@ -116,7 +117,7 @@ class FileTextExtractor {
         )
         let fileManager = FileManager.default
         let tempFolderURL = document.directory
-
+//        TimeLogger.log("onFileSelected", message: "extractContent2")
         do {
             // Try to delete the folder
             try fileManager.removeItem(at: tempFolderURL)
@@ -131,19 +132,21 @@ class FileTextExtractor {
     }
 
     static func extractTextFromPDF(_ fileURL: URL) throws -> BookFile {
+//        TimeLogger.log("onFileSelected", message: "extractTextFromPDF1")
         guard let document = PDFDocument(url: fileURL) else {
             throw NSError(domain: "PDFError", code: 237, userInfo: [NSLocalizedDescriptionKey: "Unable to open PDF document"])
         }
-
+//        TimeLogger.log("onFileSelected", message: "extractTextFromPDF2")
         var content = [String]()
         let pageCount = document.pageCount
         for pageIndex in 0..<pageCount {
             if let page = document.page(at: pageIndex) {
                 let pageText = page.string ?? ""
                 content.append(pageText)
+//                TimeLogger.log("onFileSelected", message: "content.append(pageText)")
             }
         }
-
+//        TimeLogger.log("onFileSelected", message: "extractTextFromPDF3")
         let title = document.documentAttributes?[AnyHashable("Title")] as? String ?? "Unknown"
         let author = document.documentAttributes?[AnyHashable("Author")] as? String ?? "Unknown"
 

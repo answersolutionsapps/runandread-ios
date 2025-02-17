@@ -9,6 +9,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 import UIKit
 import AVFAudio
+import MobileCoreServices
+
 
 public extension View {
     var isPreview: Bool {
@@ -20,35 +22,47 @@ public extension View {
     }
 }
 
+
+
+
 struct DocumentPicker: UIViewControllerRepresentable {
     var onFileSelected: (URL) -> Void
+    var onError: (Error) -> Void // Add an error handler
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(self)
+        nprint("makeCoordinator")
+        return Coordinator(self)
     }
 
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        nprint("makeUIViewController")
         let supportedTypes: [UTType] = [
-            .plainText, // .txt
-            .pdf, // .pdf
-            UTType(filenameExtension: "epub")! // .epub (eBooks)
-//            UTType(filenameExtension: "mobi")!, // .mobi (eBooks)
-//            UTType(filenameExtension: "azw3")!  // .azw3 (Kindle eBooks)
+            .plainText,
+            .pdf,
+            UTType(filenameExtension: "epub")!
         ]
+        var asCopy = true
+        if ProcessInfo.processInfo.isMacCatalystApp {
+            nprint("🏁 Running on macOS via Catalyst")
+            asCopy = false
+        }
 
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: supportedTypes, asCopy: true)
+
+        let picker = UIDocumentPickerViewController(forOpeningContentTypes: supportedTypes, asCopy: asCopy)
         picker.delegate = context.coordinator
         return picker
     }
 
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {
+        nprint("updateUIViewController")
     }
 
     class Coordinator: NSObject, UIDocumentPickerDelegate {
         var parent: DocumentPicker
-
+        
         init(_ parent: DocumentPicker) {
             self.parent = parent
+            nprint("Coordinator")
         }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
@@ -56,8 +70,20 @@ struct DocumentPicker: UIViewControllerRepresentable {
                 parent.onFileSelected(url) // Call the callback when a file is selected
             }
         }
+
+        // Error handling
+        func documentPicker(_ controller: UIDocumentPickerViewController, didFailWithError error: Error) {
+            parent.onError(error) // Call the error handler when something goes wrong
+        }
+
+        // Optional: handle user cancellation if necessary
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            // Handle user cancellation (optional, for better UX)
+            nprint("Document picker was cancelled")
+        }
     }
 }
+
 
 struct HomeScreenView: View {
     @Environment(\.scenePhase) private var scenePhase
@@ -69,61 +95,107 @@ struct HomeScreenView: View {
         ZStack {
             VStack {
                 SearchBar(text: $viewModel.searchText)
-                        .focused($textIsFocused)
-                        .toolbar {
-                            // Keyboard toolbar with Cancel button
-                            ToolbarItemGroup(placement: .keyboard) {
-                                Spacer()  // Push the button to the right
-                                Button("Cancel") {
-                                    // Dismiss the keyboard by unfocusing
-                                    textIsFocused = false
-                                }
+                    .focused($textIsFocused)
+                    .toolbar {
+                        // Keyboard toolbar with Cancel button
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()  // Push the button to the right
+                            Button("Cancel") {
+                                // Dismiss the keyboard by unfocusing
+                                textIsFocused = false
                             }
                         }
+                    }
                 if viewModel.dataSource.isEmpty {
                     emptyLibraryView
                 } else {
                     List {
                         ForEach(viewModel.filteredBooks, id: \.id) { item in
                             BookItemView(
-                                    item: item,
-                                    onSelect: {
-                                        viewModel.onSelectBook(book: item)
-                                    }
+                                item: item,
+                                onSelect: {
+                                    viewModel.onSelectBook(book: item)
+                                }
                             )
-                                    .onAppear(perform: {
-                                        item.calculate {
-                                        }
-                                    })
-                                    .padding(.horizontal, 8)
-                                    .listRowSeparator(.hidden)
-                                    .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 0, trailing: 12))
-                                    .background(Color.clear)
+                            .onAppear(perform: {
+                                item.calculate {
+                                }
+                            })
+                            .padding(.horizontal, 8)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 0, trailing: 12))
+                            .background(Color.clear)
                         }
                     }
-                            .listStyle(.plain)
+                    .listStyle(.plain)
                 }
             }
-                        if viewModel.isLoading() {
-                            CustomActivityIndicator()
-                        }
+            if viewModel.bookManager.inProgress {
+                CustomActivityIndicator()
+            }
         }
-                .sheet(isPresented: $viewModel.showFilePicker) {
-                    DocumentPicker { fileURL in
-                        viewModel.onFileSelected(fileURL: fileURL)
+        .alert("Open File Error", isPresented: $viewModel.showErrorMessage, presenting: viewModel.errorMessage) { _ in
+            Button("OK", role: .cancel) {
+                viewModel.errorMessage = nil
+            }
+            Button("Share error with developer", role: .destructive) {
+                let error = viewModel.errorMessage ?? "Unknown error"
+                let messageToSend = """
+                Run & Read - A Bug Report
+                <br><br>
+                ==Report Begins==========<br>
+                Input here your feedback or the details of the issues you have.
+                <br>==Report Ends============
+                <br><br>
+                Error: \(error)
+                <br><br>
+                OS Version: \(ProcessInfo.processInfo.operatingSystemVersionString)
+                <br>
+                Model: \(UIDevice.current.model)
+                <br>
+                App Version: \(Bundle.main.fullVersion)
+                <br>
+                """
+                
+                EmailService.shared.sendEmail(
+                    subject: "Run & Read - Bug Report",
+                    body: messageToSend,
+                    to: "support@answersolutions.net"
+                ) { (canSend, sent) in
+                    if !sent {
+                        print("Email not sent")
+                    } else {
+                        print("Email sent")
                     }
+                    viewModel.errorMessage = nil
                 }
+            }
+        } message: { error in
+            Text(error)
+        }
+        .sheet(isPresented: $viewModel.showFilePicker) {
+            DocumentPicker(onFileSelected: { fileURL in
+                //TimeLogger.start("onFileSelected", message: "DocumentPicker")
+                DispatchQueue.main.async {
+                    self.viewModel.bookManager.inProgress = true
+                    viewModel.showFilePicker = false
+                    viewModel.onFileSelected(fileURL: fileURL)
+                }
+            }, onError: { error in
+                nprint("Error: \(error.localizedDescription)")
+            })
+        }
                 .onChange(of: scenePhase) { newPhase in
                     switch newPhase {
                     case .active:
-                        print("App is active (foreground)")
+                        nprint("App is active (foreground)")
                         viewModel.onBackToForegraund()
                     case .inactive:
-                        print("App is inactive")
+                        nprint("App is inactive")
                     case .background:
-                        print("App is in the background")
+                        nprint("App is in the background")
                     @unknown default:
-                        print("Unknown scene phase")
+                        nprint("Unknown scene phase")
                     }
                 }
                 .onAppear {
@@ -188,7 +260,7 @@ struct HomeScreenView: View {
         if let text = UIPasteboard.general.string {
             viewModel.onPasteFromClipboard(text: text)
         } else {
-            print("No text found in clipboard")
+            nprint("No text found in clipboard")
         }
     }
 

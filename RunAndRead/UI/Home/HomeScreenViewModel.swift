@@ -18,6 +18,8 @@ class HomeScreenViewModel: ObservableObject {
         }
     }
     @Published var filteredBooks: [Book] = []
+    @Published var errorMessage: String? = nil
+    @Published var showErrorMessage = false
     
     @Binding var path: NavigationPath
     var bookManager: BookManager
@@ -51,10 +53,12 @@ class HomeScreenViewModel: ObservableObject {
         DispatchQueue.main.async {
             self.bookManager.inProgress = true
         }
-        bookManager.loadText(from: fileURL) { bookFile in
+        bookManager.loadText(from: fileURL) { bookFile, error in
             guard let bookFile = bookFile else {
                 DispatchQueue.main.async {
-                    self.showFilePicker = false
+                    self.errorMessage = error
+                    self.showErrorMessage = true
+                    self.bookManager.inProgress = false
                 }
                 return
             }
@@ -79,8 +83,15 @@ class HomeScreenViewModel: ObservableObject {
     
     func handleClipboardWebLink() {
         if let text = UIPasteboard.general.string, let url = URL(string: text) {
-            bookManager.loadText2(from: url) { bookFile in
-                guard let bookFile = bookFile else { return }
+            bookManager.loadText2(from: url) { bookFile, error in
+                guard let bookFile = bookFile else {
+                    DispatchQueue.main.async {
+                        self.errorMessage = error
+                        self.showErrorMessage = true
+                        self.bookManager.inProgress = false
+                    }
+                    return
+                }
                 
                 self.bookManager.plainTextData = bookFile.content
                 self.bookManager.plainTextData.append(". This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
@@ -107,9 +118,11 @@ class HomeScreenViewModel: ObservableObject {
             self.bookManager.inProgress = true
         }
 //        TimeLogger.log("onFileSelected", message: "before.loadText")
-        bookManager.loadText(from: fileURL) { bookFile in
+        bookManager.loadText(from: fileURL) { bookFile, error in
             guard let bookFile = bookFile else {
                 DispatchQueue.main.async {
+                    self.errorMessage = error
+                    self.showErrorMessage = true
                     self.bookManager.inProgress = false
                 }
                 return
@@ -138,11 +151,13 @@ class HomeScreenViewModel: ObservableObject {
     
     func onBackToForegraund() {
         if let url = bookManager.openedFilePath {
-            bookManager.loadText(from: url) { bookFile in
+            bookManager.loadText(from: url) { bookFile, error in
                 self.bookManager.openedFilePath?.stopAccessingSecurityScopedResource()
                 self.bookManager.openedFilePath = nil
                 guard let bookFile = bookFile else {
                     DispatchQueue.main.async {
+                        self.errorMessage = error
+                        self.showErrorMessage = true
                         self.bookManager.inProgress = false
                     }
                     return

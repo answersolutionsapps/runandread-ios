@@ -63,10 +63,10 @@ struct CustomActivityIndicator: View {
                 contentView: AnyView(VStack(alignment: .center) {
                 VStack(alignment: .center, spacing: UIConfig.largeSpace) {
                     ActivityIndicatorRepresentable(style: UIActivityIndicatorView.Style.large)
-                    Text("Working..")
+                    Text("Working...")
                     .font(.headline)
                 }
-                .frame(width: 72, height: 72)
+                .frame(width: 120, height: 72)
             }.padding(UIConfig.largeSpace)))
         }
     }
