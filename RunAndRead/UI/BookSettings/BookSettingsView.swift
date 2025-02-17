@@ -187,7 +187,7 @@ struct BookSettingsView: View {
 
                             }, label: {
                                 Text("Save").font(UIConfig.buttonFont)
-                            })
+                            }).disabled(viewModel.invalidBook())
                     )
                     .sheet(isPresented: $viewModel.showLanguagePicker) {
                         LanguagePicker(viewModel: viewModel)

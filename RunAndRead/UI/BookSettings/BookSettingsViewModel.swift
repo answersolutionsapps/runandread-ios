@@ -22,6 +22,10 @@ class BookSettingsViewModel: ObservableObject {
     @Published var showLanguagePicker: Bool = false
     @Published var showVoicePicker: Bool = false
     
+    func invalidBook() -> Bool {
+        return title.isEmpty || author.isEmpty || contextText.isEmpty
+    }
+    
     func onSelectVoice(voice: AVSpeechSynthesisVoice) {
         selectedVoice = voice
         if let voiceRate = bookManager.currentBook?.voiceRate {
