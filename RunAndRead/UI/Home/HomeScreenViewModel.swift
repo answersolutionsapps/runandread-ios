@@ -20,7 +20,7 @@ class HomeScreenViewModel: ObservableObject {
     @Published var filteredBooks: [Book] = []
     
     @Binding var path: NavigationPath
-    private var bookManager: BookManager
+    var bookManager: BookManager
 
     init(bookManager: BookManager, path: Binding<NavigationPath>) {
         self.bookManager = bookManager
@@ -32,7 +32,9 @@ class HomeScreenViewModel: ObservableObject {
     }
     
     private func updateFilteredBooks() {
-        filteredBooks = dataSource.filter {
+        filteredBooks = dataSource.sorted(by: { b1, b2 in
+            b1.created > b2.created
+        }).filter {
             searchText.isEmpty ||
             $0.title.localizedCaseInsensitiveContains(searchText) ||
             $0.author.localizedCaseInsensitiveContains(searchText)
@@ -46,8 +48,14 @@ class HomeScreenViewModel: ObservableObject {
     }
 
     func handleFileSelection(fileURL: URL) {
+        DispatchQueue.main.async {
+            self.bookManager.inProgress = true
+        }
         bookManager.loadText(from: fileURL) { bookFile in
             guard let bookFile = bookFile else {
+                DispatchQueue.main.async {
+                    self.showFilePicker = false
+                }
                 return
             }
             
@@ -79,6 +87,9 @@ class HomeScreenViewModel: ObservableObject {
                 
                 self.bookManager.titleData = bookFile.title
                 self.bookManager.authorData = bookFile.author
+                DispatchQueue.main.async {
+                    self.showFilePicker = false
+                }
             }
         }
     }
@@ -92,8 +103,15 @@ class HomeScreenViewModel: ObservableObject {
     }
     
     func onFileSelected(fileURL: URL) {
+        DispatchQueue.main.async {
+            self.bookManager.inProgress = true
+        }
+//        TimeLogger.log("onFileSelected", message: "before.loadText")
         bookManager.loadText(from: fileURL) { bookFile in
             guard let bookFile = bookFile else {
+                DispatchQueue.main.async {
+                    self.bookManager.inProgress = false
+                }
                 return
             }
             
@@ -106,8 +124,14 @@ class HomeScreenViewModel: ObservableObject {
             DispatchQueue.main.async {
                 print("loadText.title => \(bookFile.title)")
                 print("loadText.author => \(bookFile.author)")
-
+//                TimeLogger.log("onFileSelected", message: "loadText.title")
                 self.path.append(AppScreen.newBook)
+                
+                DispatchQueue.main.async {
+                    self.bookManager.inProgress = false
+//                    TimeLogger.log("onFileSelected", message: "loadText.inProgress")
+                }
+                
             }
         }
     }
@@ -118,6 +142,9 @@ class HomeScreenViewModel: ObservableObject {
                 self.bookManager.openedFilePath?.stopAccessingSecurityScopedResource()
                 self.bookManager.openedFilePath = nil
                 guard let bookFile = bookFile else {
+                    DispatchQueue.main.async {
+                        self.bookManager.inProgress = false
+                    }
                     return
                 }
                 
@@ -130,6 +157,7 @@ class HomeScreenViewModel: ObservableObject {
                     print("loadText.title => \(bookFile.title)")
                     print("loadText.author => \(bookFile.author)")
                     self.path.append(AppScreen.newBook)
+                    self.bookManager.inProgress = false
                 }
             }
         }
