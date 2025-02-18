@@ -11,14 +11,15 @@ struct BookPlayerView: View {
                     if let book = viewModel.currentBook() {
                         BookmarkListView(book: book)
                         Divider()
+                        BookCoverDetailsView(book: book)
+                        PositionSliderView(book: book)
+                        Divider()
                         HorizontalyScrolledTextView(
                                 words: viewModel.currentFrame,
                                 index: viewModel.currentWordIndexInFrame,
                                 locale: book.language)
                                 .frame(maxWidth: .infinity, maxHeight: 60)
                         Divider()
-                        BookCoverDetailsView(book: book)
-                        PositionSliderView(book: book)
                         PlaybackContrallsView()
                     } else if viewModel.isInitializing() {
                         Spacer()
@@ -37,6 +38,9 @@ struct BookPlayerView: View {
                 .onAppear {
                     if !isPreview {
                         viewModel.setupBook()
+//                    } else {
+//                        viewModel.player.state = .idle
+//                        viewModel.player.words = ["Test", "Test"]
                     }
                 }
                 .onDisappear {
