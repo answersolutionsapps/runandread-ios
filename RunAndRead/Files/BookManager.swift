@@ -15,16 +15,20 @@ class BookManager: ObservableObject {
     private let rootDirectory: URL
     private let currentBookIdPath: URL
     private let libraryFolderPath: URL
+    private let audioLibraryFolderPath: URL
 
-    @Published var library: [Book] = []
-    @Published var libraryDefault: [Book] = []
+    @Published var library: [any RunAndReadBook] = []
+    @Published var libraryDefault: [any RunAndReadBook] = []
     @Published var currentBookId: String?
     @Published var inProgress = false
-    @Published var currentBook: Book?
+    @Published var currentBook: (any RunAndReadBook)?
 
     @Published var plainTextData: [String] = []
     @Published var authorData: String = ""
     @Published var titleData: String = ""
+    
+    @Published var plainTextPartData: [TextPart] = []
+    @Published var audioPath: String? = nil
 
     public var openedFilePath: URL? = nil
 
@@ -32,23 +36,38 @@ class BookManager: ObservableObject {
         rootDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
         currentBookIdPath = rootDirectory.appendingPathComponent("currentBookId.json")
         libraryFolderPath = rootDirectory.appendingPathComponent("library")
+        audioLibraryFolderPath = rootDirectory.appendingPathComponent("audiobooks")
 
         if !fileManager.fileExists(atPath: libraryFolderPath.path) {
             try? fileManager.createDirectory(at: libraryFolderPath, withIntermediateDirectories: true, attributes: nil)
         }
+        if !fileManager.fileExists(atPath: audioLibraryFolderPath.path) {
+            try? fileManager.createDirectory(at: audioLibraryFolderPath, withIntermediateDirectories: true, attributes: nil)
+        }
     }
 
-    func saveCurrentBook(book: Book, onSave: @escaping () -> Void) {
+    func saveCurrentBook(book: any RunAndReadBook, onSave: @escaping () -> Void) {
         inProgress = true
         DispatchQueue.global(qos: .background).async {
             do {
-                let data = try JSONEncoder().encode(book.id)
-                try data.write(to: self.currentBookIdPath)
-                DispatchQueue.main.async {
-                    self.currentBookId = book.id
-                    self.currentBook = book
-                    onSave()
-                    self.inProgress = false
+                if let b = book as? Book {
+                    let data = try JSONEncoder().encode(book.id)
+                    try data.write(to: self.currentBookIdPath)
+                    DispatchQueue.main.async {
+                        self.currentBookId = book.id
+                        self.currentBook = book
+                        onSave()
+                        self.inProgress = false
+                    }
+                } else if let b = book as? AudioBook {
+                    let data = try JSONEncoder().encode(b.id)
+                    try data.write(to: self.currentBookIdPath)
+                    DispatchQueue.main.async {
+                        self.currentBookId = book.id
+                        self.currentBook = book
+                        onSave()
+                        self.inProgress = false
+                    }
                 }
             } catch {
                 print("Error saving current book ID: \(error)")
@@ -128,15 +147,40 @@ class BookManager: ObservableObject {
             }
         }
     }
-
-    func deleteBookFromLibrary(book: Book, completion: @escaping (Result<Void, Error>) -> Void) {
+    
+    func saveAudioBookToLibrary(book: AudioBook, completion: @escaping (Result<URL, Error>) -> Void) {
         inProgress = true
         DispatchQueue.global(qos: .background).async {
-            let bookFilePath = self.libraryFolderPath.appendingPathComponent("\(book.id).json")
+            let bookFilePath = self.audioLibraryFolderPath.appendingPathComponent("\(book.id).json")
+            do {
+                let data = try JSONEncoder().encode(book)
+                try data.write(to: bookFilePath)
+                DispatchQueue.main.async {
+                    completion(.success(bookFilePath))
+                    self.inProgress = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                    self.inProgress = false
+                }
+            }
+        }
+    }
+
+    func deleteBookFromLibrary(book: any RunAndReadBook, completion: @escaping (Result<Void, Error>) -> Void) {
+        inProgress = true
+        DispatchQueue.global(qos: .background).async {
+            let bookFilePath = if book.playerType() == .audio {
+                 self.audioLibraryFolderPath.appendingPathComponent("\(book.id).json")
+            } else {
+                 self.libraryFolderPath.appendingPathComponent("\(book.id).json")
+            }
             do {
                 if FileManager.default.fileExists(atPath: bookFilePath.path) {
                     try FileManager.default.removeItem(at: bookFilePath)
                 }
+                //TODO: remove audio file
                 self.deleteCurrentBook {
                     DispatchQueue.main.async {
                         completion(.success(()))
@@ -153,32 +197,52 @@ class BookManager: ObservableObject {
     }
 
 
-    private func loadBookFromLibrary(id: String) -> AnyPublisher<Book?, Never> {
+    private func loadBookFromLibrary(id: String) -> AnyPublisher<(any RunAndReadBook)?, Never> {
         Future { promise in
-            let bookFilePath = self.libraryFolderPath.appendingPathComponent("\(id).json")
-            do {
-                let data = try Data(contentsOf: bookFilePath)
-                let decoder = JSONDecoder()
-                let book = try decoder.decode(Book.self, from: data)
-                promise(.success(book))
-            } catch {
-                print("Error loading book: \(error)")
-                promise(.success(nil))
+            let bookFilePath1 = self.libraryFolderPath.appendingPathComponent("\(id).json")
+            let bookFilePath2 = self.audioLibraryFolderPath.appendingPathComponent("\(id).json")
+            if self.fileManager.fileExists(atPath: bookFilePath1.path()) {
+                do {
+                    let data = try Data(contentsOf: bookFilePath1)
+                    let decoder = JSONDecoder()
+                    let book = try decoder.decode(Book.self, from: data)
+                    promise(.success(book))
+                } catch {
+                    print("Error loading book: \(error)")
+                    promise(.success(nil))
+                }
+            } else if self.fileManager.fileExists(atPath: bookFilePath2.path()) {
+                do {
+                    let data = try Data(contentsOf: bookFilePath2)
+                    let decoder = JSONDecoder()
+                    let book = try decoder.decode(AudioBook.self, from: data)
+                    promise(.success(book))
+                } catch {
+                    print("Error loading book: \(error)")
+                    promise(.success(nil))
+                }
             }
         }
                 .receive(on: DispatchQueue.main)
                 .eraseToAnyPublisher()
     }
 
-    private func loadLibrary() -> AnyPublisher<[Book], Never> {
+    private func loadLibrary() -> AnyPublisher<[any RunAndReadBook], Never> {
         Future { promise in
             do {
-                let fileURLs = try self.fileManager.contentsOfDirectory(at: self.libraryFolderPath, includingPropertiesForKeys: nil)
-                var books: [Book] = []
+                let file1URLs = try self.fileManager.contentsOfDirectory(at: self.libraryFolderPath, includingPropertiesForKeys: nil)
+                let file2URLs = try self.fileManager.contentsOfDirectory(at: self.audioLibraryFolderPath, includingPropertiesForKeys: nil)
+                var books: [any RunAndReadBook] = []
 
-                for fileURL in fileURLs {
+                for fileURL in file1URLs {
                     let data = try Data(contentsOf: fileURL)
                     if let book = try? JSONDecoder().decode(Book.self, from: data) {
+                        books.append(book)
+                    }
+                }
+                for fileURL in file2URLs {
+                    let data = try Data(contentsOf: fileURL)
+                    if let book = try? JSONDecoder().decode(AudioBook.self, from: data) {
                         books.append(book)
                     }
                 }
@@ -194,7 +258,7 @@ class BookManager: ObservableObject {
 
     func addABookmark() {
         if let book = currentBook {
-            book.bookmarks.insert(Bookmark(voiceRate: book.voiceRate, position: book.lastPosition), at: 0) 
+            book.bookmarks.insert(Bookmark(position: book.lastPosition), at: 0)
         }
     }
 
@@ -204,8 +268,10 @@ class BookManager: ObservableObject {
     }
 
     func persist(completion: @escaping (Result<URL, Error>) -> Void) {
-        if let b = currentBook {
+        if let b = currentBook as? Book{
             saveBookToLibrary(book: b, completion: completion)
+        } else if let b = currentBook as? AudioBook{
+            saveAudioBookToLibrary(book: b, completion: completion)
         }
     }
 
@@ -213,13 +279,24 @@ class BookManager: ObservableObject {
         guard let index = library.firstIndex(where: { $0.id == bookId }) else {
             return
         }
-        library[index].title = title
-        library[index].author = author
-        library[index].language = language
-        library[index].voice = voice
-        library[index].voiceRate = voiceRate
-        saveBookToLibrary(book: library[index]) { _ in
-            onSave()
+        
+        if let book = library[index] as? Book { // Safely downcast to TextBook
+            book.title = title
+            book.author = author
+            book.language = language
+            book.voice = voice
+            book.voiceRate = voiceRate
+            
+            saveBookToLibrary(book: book) { _ in
+                onSave()
+            }
+        } else if let audioBook = library[index] as? AudioBook {
+            audioBook.title = title
+            audioBook.author = author
+            audioBook.voiceRate = voiceRate
+            saveAudioBookToLibrary(book: audioBook) { _ in
+                onSave()
+            }
         }
     }
 

@@ -17,7 +17,7 @@ class HomeScreenViewModel: ObservableObject {
             updateFilteredBooks() // Recalculate filtered books when searchText changes
         }
     }
-    @Published var filteredBooks: [Book] = []
+    @Published var filteredBooks: [any RunAndReadBook] = []
     @Published var errorMessage: String? = nil
     @Published var showErrorMessage = false
     
@@ -29,7 +29,7 @@ class HomeScreenViewModel: ObservableObject {
         _path = path
     }
     
-    var dataSource: [Book] {
+    var dataSource: [any RunAndReadBook] {
         return bookManager.library.isEmpty ? bookManager.libraryDefault : bookManager.library
     }
     
@@ -105,7 +105,7 @@ class HomeScreenViewModel: ObservableObject {
         }
     }
     
-    func onSelectBook(book: Book) {
+    func onSelectBook(book: any RunAndReadBook) {
         bookManager.saveCurrentBook(book: book) {
             DispatchQueue.main.async {
                 self.path.append(AppScreen.player)
@@ -128,8 +128,16 @@ class HomeScreenViewModel: ObservableObject {
                 return
             }
             
-            self.bookManager.plainTextData =  bookFile.content
-            self.bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
+            if bookFile.content.isEmpty {
+                self.bookManager.plainTextPartData =  bookFile.text
+                self.bookManager.audioPath =  bookFile.audioPath
+                self.bookManager.plainTextData = []
+            } else {
+                self.bookManager.audioPath = ""
+                self.bookManager.plainTextPartData = []
+                self.bookManager.plainTextData =  bookFile.content
+                self.bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
+            }
             
             self.bookManager.titleData = bookFile.title
             self.bookManager.authorData = bookFile.author

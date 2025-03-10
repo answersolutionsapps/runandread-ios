@@ -19,13 +19,13 @@ struct BookSettingsView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Title")
-                            .font(.headline)
+                        .font(.headline)
                     
                     HStack {
                         TextField("Enter title", text: $viewModel.title)
-                                .textFieldStyle(DefaultTextFieldStyle())
-                                .font(.title2)
-                                .padding(.bottom, 10)
+                            .textFieldStyle(DefaultTextFieldStyle())
+                            .font(.title2)
+                            .padding(.bottom, 10)
                         
                         if !viewModel.title.isEmpty {
                             Button(action: {
@@ -36,9 +36,9 @@ struct BookSettingsView: View {
                             }.padding(.trailing, 8)
                         }
                     }
-
+                    
                     Text("Author")
-                            .font(.headline)
+                        .font(.headline)
                     HStack {
                         TextField("Enter author", text: $viewModel.author)
                             .textFieldStyle(DefaultTextFieldStyle())
@@ -53,82 +53,92 @@ struct BookSettingsView: View {
                             }.padding(.trailing, 8)
                         }
                     }
-                    Divider()
-                    Text("Language")
+                    if (!viewModel.isAudioBook()) {
+                        Divider()
+                        Text("Language")
                             .font(.headline)
-                    Button(action: {
-                        viewModel.onShowLanguagePicker()
-                    }) {
-                        Text(viewModel.languageString())
+                        Button(action: {
+                            viewModel.onShowLanguagePicker()
+                        }) {
+                            Text(viewModel.languageString())
                                 .font(.body)
                                 .padding()
                                 .overlay(
-                                        RoundedRectangle(cornerRadius: 5)
-                                                .stroke(Color.gray, lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(Color.gray, lineWidth: 1)
                                 )
+                        }
                     }
                     Divider()
                     HStack {
                         Text("Naration Voice")
-                                .font(.headline)
+                            .font(.headline)
                         ImageButtonView(
-                                imageName: "play.circle.fill",
-                                imageColor: .accentColor,
-                                action: {
-                                    viewModel.onPlayPauseText()
-                                }
+                            imageName: "play.circle.fill",
+                            imageColor: .accentColor,
+                            action: {
+                                viewModel.onPlayPauseText()
+                            }
                         )
                     }
                     VStack(alignment: .center) {
-                        SpeechSpeedSelector(defaultSpeed: viewModel.defaultVoiceRate.playbackRateToSpeed()) { newSpeed in
+                        SpeechSpeedSelector(defaultSpeed: viewModel.getDefaultVoiceRate()) { newSpeed in
                             print("Selected speed: \(newSpeed)")
-                            viewModel.defaultVoiceRate = newSpeed.speedToPlaybackRate()
+                            
+                            viewModel.onRateChanges(value: newSpeed)
+//                            viewModel.defaultVoiceRate = newSpeed.speedToPlaybackRate()
                         }
                     }
-                            .frame(maxWidth: .infinity)
-
-                    Button(action: {
-                        viewModel.onShowVoicePicker()
-                    }, label: {
-                        Text(String(format: "\(viewModel.selectedVoice.name) (%.2f)", viewModel.defaultVoiceRate.playbackRateToSpeed()))
+                    .frame(maxWidth: .infinity)
+                    if (!viewModel.isAudioBook()) {
+                        Button(action: {
+                            viewModel.onShowVoicePicker()
+                        }, label: {
+                            Text(String(format: "\(viewModel.selectedVoice.name) (%.2f)", viewModel.defaultVoiceRate.playbackRateToSpeed()))
                                 .font(.body)
                                 .padding()
                                 .overlay(
-                                        RoundedRectangle(cornerRadius: 5)
-                                                .stroke(Color.gray, lineWidth: 1)
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .stroke(Color.gray, lineWidth: 1)
                                 )
-                    })
-                            .sheet(isPresented: $viewModel.showVoicePicker) {
-                                VoicePicker(viewModel: viewModel)
-                            }
+                        })
+                        .sheet(isPresented: $viewModel.showVoicePicker) {
+                            VoicePicker(viewModel: viewModel)
+                        }
+                    }
                     Divider()
+                    if (!viewModel.isAudioBook()) {
                     VStack {
                         Text("Pick First Page to Read")
-                                .font(.headline)
+                            .font(.headline)
                         HorizontalPageListView(selectedPage: $viewModel.selectedPart, totalPages: viewModel.contextText.count) { newPageIndex in
                             viewModel.onPageChanged(newPageIndex: newPageIndex)
                         }
                         Text("Start Reading From Page: \(viewModel.selectedPart + 1)")
                         Divider()
                         TextEditor(text: $viewModel.textPreview)
-                                .font(.body)
-                                .frame(height: 350)  // Adjust frame as needed
-                                .disabled(false)
-                                .focused($textIsFocused)
-                                .scrollDisabled(false)
-
+                            .font(.body)
+                            .frame(height: 350)  // Adjust frame as needed
+                            .disabled(false)
+                            .focused($textIsFocused)
+                            .scrollDisabled(false)
+                        
                         Spacer()
                     }
-                            .toolbar {
-                                // Keyboard toolbar with Cancel button
-                                ToolbarItemGroup(placement: .keyboard) {
-                                    Spacer()  // Push the button to the right
-                                    Button("Cancel") {
-                                        // Dismiss the keyboard by unfocusing
-                                        textIsFocused = false
-                                    }
-                                }
+                    .toolbar {
+                        // Keyboard toolbar with Cancel button
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()  // Push the button to the right
+                            Button("Cancel") {
+                                // Dismiss the keyboard by unfocusing
+                                textIsFocused = false
                             }
+                        }
+                    }
+                    } else {
+                        Spacer()
+                            .frame(height: 400)
+                    }
                     Divider()
                     if viewModel.isDeleteVisible() {
                         VStack(alignment: .center, spacing: UIConfig.normalSpace) {

@@ -46,19 +46,29 @@ extension TextToSpeechPlayer {
         nowPlayingInfo[MPMediaItemPropertyTitle] = title
         nowPlayingInfo[MPMediaItemPropertyArtist] = author
         nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
-        nowPlayingInfo[MPMediaItemPropertySkipCount] = 30
+        nowPlayingInfo[MPMediaItemPropertySkipCount] = TextToSpeechPlayer.SkipCountSeconds
         nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = totalTime
-        
+
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
-    
+
     func updateProgressNowPlayingInfo() {
-        guard var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo else { return }
-            
+        guard var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo else {
+            return
+        }
+
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = indexToElapsedSeconds()
-            
+
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
+}
+
+extension TextToSpeechPlayer {
+    static let SkipCountSeconds: Int = 30
+    static let SkipCountWords: Int = 60
+    static let WordFrameSize: Int = 30
+    static let BookmarkTextLength: Int = 30
+    static let BookmarkOffcet: Int = 5
 }
 
 @MainActor
@@ -82,16 +92,16 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
 
     private var author: String = ""
     private var title: String = ""
-    private var artwork : MPMediaItemArtwork? = nil
+    private var artwork: MPMediaItemArtwork? = nil
 
     override init() {
         super.init()
         AVSpeechSynthesisVoice.speechVoices() // <--  fetch voice dependencies
         if let albumCoverImage = UIImage(named: "albumCover") {
-                    artwork = MPMediaItemArtwork(boundsSize: albumCoverImage.size) { size in
-                        return albumCoverImage
-                    }
-                }
+            artwork = MPMediaItemArtwork(boundsSize: albumCoverImage.size) { size in
+                return albumCoverImage
+            }
+        }
         setupRemoteTransportControls()
     }
 
@@ -102,7 +112,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
             onAddBookmarkCallback: (() -> Void)?
     ) {
         if let book = currentBook {
-            
+
             words.removeAll()
             words = book.text.flatMap {
                         $0.components(separatedBy: .whitespacesAndNewlines)
@@ -146,7 +156,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
             onSetUp(false, indexToElapsedSeconds().formatSecondsToHMS(), currentWordIndex, currentFrame, currentWordIndexInFrame)
         }
     }
-    
+
     func isNotUndefined() -> Bool {
         return state != .undefined && !words.isEmpty
     }
@@ -162,6 +172,14 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
         onAddBookmarkCallback = nil
     }
 
+    func endTheBook() {
+        state = .idle
+        synthesizer.stopSpeaking(at: .immediate)
+        currentFrame.removeAll()
+        currentWordIndexInFrame = 0
+        updateNowPlayingInfo()
+    }
+
     func onPrepareForPlayFromNewPosition() {
         state = .idle
         synthesizer.stopSpeaking(at: .immediate)
@@ -173,7 +191,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
         if state == .playing {
             synthesizer.pauseSpeaking(at: .immediate)
             state = .pause
-            
+
         } else {
             do {
                 try configureAudioSession()
@@ -203,47 +221,75 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
 
     func fastForward() {
         synthesizer.stopSpeaking(at: .immediate)
-        currentWordIndex = min(currentWordIndex + 60, words.count - 1) //about 30 secunds
-        updateProgress()
+        currentWordIndex = min(currentWordIndex + TextToSpeechPlayer.SkipCountWords, words.count - 1) //about 30 secunds
         state = .idle
-        playPause()
+        updateProgress()
     }
 
     func rewind() {
         synthesizer.stopSpeaking(at: .immediate)
-        currentWordIndex = max(currentWordIndex - 60, 0)//about 30 secunds
-        updateProgress()
+        currentWordIndex = max(currentWordIndex - TextToSpeechPlayer.SkipCountWords, 0)//about 30 secunds or 60 words
         state = .idle
-        playPause()
+        updateProgress()
     }
 
     private func createUtterance(from wordIndex: Int) -> AVSpeechUtterance {
         let remainingWords = Array(words[wordIndex...])
-        currentFrame = Array(remainingWords.prefix(100))
+        currentFrame = Array(remainingWords.prefix(TextToSpeechPlayer.WordFrameSize))
         currentWordIndexInFrame = 0
-        let utterance = AVSpeechUtterance(string: currentFrame.joined(separator: " "))
+        let textToSpeak = currentFrame.joined(separator: " ")
+
+//        nprint("textToSpeak => \(textToSpeak)")
+        let utterance = AVSpeechUtterance(string: textToSpeak)
         utterance.rate = speed.speedToPlaybackRate()
         utterance.volume = 1.0
         utterance.voice = selectedVoice
         return utterance
     }
 
-
-    func textForBookmark(bookmark: Bookmark, book: Book) -> String? {
+    func generateBookmarks(book: Book) {
         nprint("words: \(words.count)")
         if words.isEmpty {
-            return nil
+            return
         }
-        let startIndex = max(bookmark.position - 2, 0)
-        let endIndex = min(startIndex + 10, words.count - 1)
-        nprint("startIndex: \(startIndex)")
-        nprint("endIndex: \(endIndex)")
-        if endIndex <= words.count && words.count > 0 {
-            return words[startIndex...endIndex].joined(separator: " ")
-        } else {
-            return nil
+
+        for i in book.bookmarks.indices {
+            nprint("bookmarks: \(i)")
+            if book.bookmarks[i].text.isEmpty {
+                let startIndex = max(book.bookmarks[i].position - TextToSpeechPlayer.BookmarkOffcet, 0)
+                let endIndex = min(startIndex + TextToSpeechPlayer.BookmarkTextLength, words.count - 1)
+
+                nprint("startIndex: \(startIndex)")
+                nprint("endIndex: \(endIndex)")
+
+                if endIndex <= words.count && words.count > 0 {
+                    let elapsedSeconds = (Double(words.prefix(startIndex).joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.speed)
+
+                    book.bookmarks[i].text = "\(elapsedSeconds.formatSecondsToHMS()) | \(words[startIndex...endIndex].joined(separator: " "))"
+                } else {
+                    book.bookmarks[i].text = "Unable to generate bookmark"
+                }
+            }
         }
     }
+
+//    func textForBookmark(bookmark: Bookmark, book: Book) -> String? {
+//        nprint("words: \(words.count)")
+//        if words.isEmpty {
+//            return nil
+//        }
+//        let startIndex = max(bookmark.position - TextToSpeechPlayer.BookmarkOffcet, 0)
+//        let endIndex = min(startIndex + TextToSpeechPlayer.BookmarkTextLength, words.count - 1)
+//        nprint("startIndex: \(startIndex)")
+//        nprint("endIndex: \(endIndex)")
+//        if endIndex <= words.count && words.count > 0 {
+//            let elapsedSeconds = (Double(words.prefix(startIndex).joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.speed)
+//           
+//            return "\(elapsedSeconds.formatSecondsToHMS()) | \(words[startIndex...endIndex].joined(separator: " "))"
+//        } else {
+//            return nil
+//        }
+//    }
 
     private func indexToElapsedSeconds() -> TimeInterval {
         let elapsedSeconds = (Double(words.prefix(currentWordIndex).joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.speed)
@@ -272,35 +318,39 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
 extension TextToSpeechPlayer: @preconcurrency AVSpeechSynthesizerDelegate {
 
     private func printInfo(place: Int) {
-//        nprint("\(place). totallWordIndex => \(currentWordIndex) of \(words.count); frameIndex=> \(currentWordIndexInFrame) of \(currentFrame.count)")
-//        if currentWordIndex < words.count - 1 && currentWordIndexInFrame < currentFrame.count - 1 {
-//            nprint("\(place). \(state). totallWord => \(words[currentWordIndex]); frameWord=> \(currentFrame[currentWordIndexInFrame])")
-//        }
+        nprint("\(place). totallWordIndex => \(currentWordIndex) of \(words.count); frameIndex=> \(currentWordIndexInFrame) of \(currentFrame.count)")
+        if currentWordIndex < words.count - 1 && currentWordIndexInFrame < currentFrame.count - 1 {
+            nprint("\(place). \(state). totallWord => \(words[currentWordIndex]); frameWord=> \(currentFrame[currentWordIndexInFrame])")
+        }
     }
 
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
         if currentWordIndex < words.count - 1 {
             currentWordIndex += 1
             state = .idle
-            playPause()
+            let utterance = createUtterance(from: currentWordIndex)
+            synthesizer.speak(utterance)
+            state = .playing
             updateProgress()
-            printInfo(place: 12)
+//            printInfo(place: 12)
         } else {
-            state = .idle
-            printInfo(place: 13)
+//            printInfo(place: 13)
+            endTheBook()
         }
     }
 
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
-        if currentWordIndex < words.count - 1 {
-            if currentWordIndexInFrame < currentFrame.count - 1 {
-                currentWordIndex += 1
-                currentWordIndexInFrame += 1
-                updateProgress()
-                printInfo(place: 21)
-            }
+        if currentWordIndexInFrame < currentFrame.count - 1 {
+            currentWordIndex += 1
+            currentWordIndexInFrame += 1
+            updateProgress()
+//            printInfo(place: 21)
+        } else if currentWordIndex > words.count - 1 {
+//            printInfo(place: 23)
+            endTheBook()
+
         } else {
-            printInfo(place: 23)
+//            printInfo(place: 22)
         }
     }
 

@@ -4,43 +4,53 @@
 <dict>
 	<key>CFBundleDocumentTypes</key>
 	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Text Files</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.text</string>
+				<string>public.plain-text</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>EPUB Files</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>org.idpf.epub-container</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PDF Files</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+			</array>
+		</dict>
         <dict>
-               <key>CFBundleTypeName</key>
-               <string>Text Files</string>
-               <key>CFBundleTypeRole</key>
-               <string>Editor</string>
-               <key>LSHandlerRank</key>
-               <string>Alternate</string> <!-- Add this line -->
-               <key>LSItemContentTypes</key>
-               <array>
-                   <string>public.text</string>
-                   <string>public.plain-text</string>
-               </array>
-           </dict>
-        <dict>
-               <key>CFBundleTypeName</key>
-               <string>EPUB Files</string>
-               <key>CFBundleTypeRole</key>
-               <string>Viewer</string> <!-- Example role -->
-               <key>LSHandlerRank</key>
-               <string>Alternate</string> <!-- Add this line -->
-               <key>LSItemContentTypes</key>
-               <array>
-                   <string>org.idpf.epub-container</string> <!-- EPUB file type -->
-               </array>
-           </dict>
-        <dict>
-               <key>CFBundleTypeName</key>
-               <string>PDF Files</string>
-               <key>CFBundleTypeRole</key>
-               <string>Viewer</string>
-               <key>LSHandlerRank</key>
-               <string>Alternate</string>
-               <key>LSItemContentTypes</key>
-               <array>
-                   <string>com.adobe.pdf</string>
-               </array>
-           </dict>
+            <key>CFBundleTypeName</key>
+            <string>Run and Read File</string>
+            <key>LSHandlerRank</key>
+            <string>Owner</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.answersolutions.randr</string>
+            </array>
+        </dict>
 	</array>
 	<key>UIActivityItems</key>
 	<array>
@@ -49,6 +59,7 @@
 			<array>
 				<string>public.plain-text</string>
 				<string>org.idpf.epub</string>
+				<string>public.randr</string>
 			</array>
 		</dict>
 	</array>
@@ -58,5 +69,28 @@
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.answersolutions.randr</string>
+            <key>UTTypeDescription</key>
+            <string>Run and Read Archive</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+                <string>public.archive</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>randr</string>
+                </array>
+                <key>public.mime-type</key>
+                <string>application/x-randr</string>
+            </dict>
+        </dict>
+    </array>
 </dict>
 </plist>

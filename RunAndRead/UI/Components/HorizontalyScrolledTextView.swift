@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct HorizontalyScrolledTextView: View {
+    var highlite: Bool = true
     var words: [String] = []
     var idx: Int = -1
     var locale: Locale
 
     @State private var scrollProxy: ScrollViewProxy?
 
-    init(words: [String], index: Int, locale: Locale) {
+    init(highlite: Bool, words: [String], index: Int, locale: Locale) {
+        self.highlite = highlite
         self.idx = index
         self.words = words
         self.locale = locale
@@ -35,9 +37,9 @@ struct HorizontalyScrolledTextView: View {
                     ForEach(words.indices, id: \.self) { index in
                         Text(words[index])
                             .font(.title2)
-                            .fontWeight(index == (idx - 1) ? .bold : .regular)
-                            .foregroundColor(index == (idx - 1) ? .background : .primary)
-                            .background(index == (idx - 1) ? .accentColor : Color.clear)
+                            .fontWeight(index == (idx - 1) && highlite ? .bold : .regular)
+                            .foregroundColor(index == (idx - 1) && highlite ? .background : .primary)
+                            .background(index == (idx - 1) && highlite ? .accentColor : Color.clear)
                             .id(index) // Assign an ID for scrolling
                     }
                 }
@@ -64,6 +66,7 @@ struct HorizontalyScrolledTextView: View {
 
 #Preview {
     HorizontalyScrolledTextView(
+        highlite: true,
         words: ["Test 123", "Test 345", "Test 567"],
         index: 0,
         locale: Locale.current

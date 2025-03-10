@@ -21,6 +21,7 @@ struct RunAndReadApp: App {
     private let bookManager = BookManager()
     private let simplePlayer = SimpleTTSPlayer()
     private let textToSpeechPlayer = TextToSpeechPlayer()
+    private let audioBookPlayer = AudioBookPlayer()
     var body: some Scene {
         WindowGroup {
             SplashScreenView()
@@ -28,6 +29,7 @@ struct RunAndReadApp: App {
                 .environmentObject(bookManager)
                 .environmentObject(simplePlayer)
                 .environmentObject(textToSpeechPlayer)
+                .environmentObject(audioBookPlayer)
                 .onOpenURL { url in
                     handleOpenFile(url)
                 }

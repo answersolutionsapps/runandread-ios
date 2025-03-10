@@ -9,8 +9,8 @@ import SwiftUI
 import AVFAudio
 import Combine
 
-struct BookItemView: View {
-    @ObservedObject var item: Book
+struct BookItemView<T: RunAndReadBook>: View {
+    @ObservedObject var item: T
     let onSelect: () -> Void
     
     @State private var isPressed = false // Track pressed state

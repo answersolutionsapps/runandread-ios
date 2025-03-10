@@ -8,20 +8,52 @@
 import Foundation
 import AVFAudio
 
-
-
-struct Bookmark: Codable  {
-    let voiceRate: Float
-    let position: Int
+protocol RunAndReadBook: Identifiable, Codable, Hashable, ObservableObject {
+    var id: String { get }
+    var title: String { get }
+    var author: String { get }
+    var language: Locale { get set }
+    var voiceRate: Float { get set }
+    var lastPosition: Int { get set } // Position for resuming
+    var created: Date { get set }
+    var bookmarks: [Bookmark] { get set }
+    
+    func playerType() -> BookPlayerType
+    func calculate(completed: @escaping ()->Void)
+    
+    // Computed Properties (Cannot use @Published here)
+    var isCompleted: Bool { get }
+    var totalTime: String { get }
+    var progressTime: String { get }
+    var isCalculating: Bool { get }
 }
 
-class Book: ObservableObject, Codable, Identifiable, Hashable {
-    
+enum BookPlayerType: String, Codable {
+    case tts
+    case audio
+}
+
+struct TextPart: Codable {
+    let start_time_ms: Int
+    let text: String
+}
+
+struct Bookmark: Codable  {
+    let position: Int
+    var text: String = ""
+}
+
+
+class Book: RunAndReadBook {
     static let SECONDS_PER_CHARACTER = 0.080
     
     static func == (lhs: Book, rhs: Book) -> Bool {
         lhs.id == rhs.id
     }
+    
+    func playerType() -> BookPlayerType {
+           return .tts
+       }
     
     var id: String
     var title: String
@@ -125,20 +157,11 @@ class Book: ObservableObject, Codable, Identifiable, Hashable {
                 self.progressTime = elapsedSeconds.formatSecondsToHMS()
                 self.totalTime = totalSeconds.formatSecondsToHMS()
                 self.isCompleted = self.lastPosition + 1 >= words.count
-                
-//                nprint("self.lastPosition=>\(self.lastPosition)")
-//                nprint("words.count=>\(words.count)")
-//                nprint("self.progressTime=>\(self.progressTime)")
-//                nprint("words.totalTime=>\(self.totalTime)")
                 self.isCalculating = false
                 completed()
             }
         }
     }
-    
-//    func refreshBooks() {
-//        objectWillChange.send() // Manually notify SwiftUI of changes
-//    }
     
     // MARK: - Computed Properties
     @Published var isCompleted: Bool = false

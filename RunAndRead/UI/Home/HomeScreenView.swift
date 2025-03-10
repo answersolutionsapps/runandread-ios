@@ -39,7 +39,8 @@ struct DocumentPicker: UIViewControllerRepresentable {
         let supportedTypes: [UTType] = [
             .plainText,
             .pdf,
-            UTType(filenameExtension: "epub")!
+            UTType(filenameExtension: "epub")!,
+            UTType(filenameExtension: "randr")!
         ]
         var asCopy = true
         if ProcessInfo.processInfo.isMacCatalystApp {
@@ -91,128 +92,145 @@ struct HomeScreenView: View {
     @StateObject var viewModel: HomeScreenViewModel
     
 
-    var body: some View {
-        ZStack {
-            VStack {
-                SearchBar(text: $viewModel.searchText)
-                    .focused($textIsFocused)
-                    .toolbar {
-                        // Keyboard toolbar with Cancel button
-                        ToolbarItemGroup(placement: .keyboard) {
-                            Spacer()  // Push the button to the right
-                            Button("Cancel") {
-                                // Dismiss the keyboard by unfocusing
-                                textIsFocused = false
-                            }
+var body: some View {
+    ZStack {
+        VStack {
+            SearchBar(text: $viewModel.searchText)
+                .focused($textIsFocused)
+                .toolbar {
+                    // Keyboard toolbar with Cancel button
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()  // Push the button to the right
+                        Button("Cancel") {
+                            // Dismiss the keyboard by unfocusing
+                            textIsFocused = false
                         }
                     }
-                if viewModel.dataSource.isEmpty {
-                    emptyLibraryView
-                } else {
-                    List {
-                        ForEach(viewModel.filteredBooks, id: \.id) { item in
+                }
+
+            if viewModel.dataSource.isEmpty {
+                emptyLibraryView
+            } else {
+                List {
+                    ForEach(viewModel.filteredBooks, id: \.id) { item in
+                        if let textBook = item as? Book {
                             BookItemView(
-                                item: item,
+                                item: textBook,
                                 onSelect: {
                                     viewModel.onSelectBook(book: item)
-                                }
-                            )
-                            .onAppear(perform: {
-                                item.calculate {
-                                }
-                            })
+                                })
+                            .onAppear {
+                                textBook.calculate { }
+                            }
                             .padding(.horizontal, 8)
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 0, trailing: 12))
                             .background(Color.clear)
+                        } else if let audioBook = item as? AudioBook {
+                            BookItemView(
+                                item: audioBook,
+                                onSelect: {
+                                   viewModel.onSelectBook(book: item)
+                                })
+                            .onAppear {
+                                audioBook.calculate { }
+                            }
+                            .padding(.horizontal, 8)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 0, trailing: 12))
+                            .background(Color.clear)
+                        }else {
+                            EmptyView()
                         }
                     }
-                    .listStyle(.plain)
                 }
-            }
-            if viewModel.bookManager.inProgress {
-                CustomActivityIndicator()
+                .listStyle(.plain)
             }
         }
-        .alert("Open File Error", isPresented: $viewModel.showErrorMessage, presenting: viewModel.errorMessage) { _ in
-            Button("OK", role: .cancel) {
+
+        if viewModel.bookManager.inProgress {
+            CustomActivityIndicator()
+        }
+    }
+    .alert("Open File Error", isPresented: $viewModel.showErrorMessage, presenting: viewModel.errorMessage) { _ in
+        Button("OK", role: .cancel) {
+            viewModel.errorMessage = nil
+        }
+        Button("Share error with developer", role: .destructive) {
+            let error = viewModel.errorMessage ?? "Unknown error"
+            let messageToSend = """
+            Run & Read - A Bug Report
+            <br><br>
+            ==Report Begins==========<br>
+            Input here your feedback or the details of the issues you have.
+            <br>==Report Ends============
+            <br><br>
+            Error: \(error)
+            <br><br>
+            OS Version: \(ProcessInfo.processInfo.operatingSystemVersionString)
+            <br>
+            Model: \(UIDevice.current.model)
+            <br>
+            App Version: \(Bundle.main.fullVersion)
+            <br>
+            """
+
+            EmailService.shared.sendEmail(
+                subject: "Run & Read - Bug Report",
+                body: messageToSend,
+                to: "support@answersolutions.net"
+            ) { (canSend, sent) in
+                if !sent {
+                    print("Email not sent")
+                } else {
+                    print("Email sent")
+                }
                 viewModel.errorMessage = nil
             }
-            Button("Share error with developer", role: .destructive) {
-                let error = viewModel.errorMessage ?? "Unknown error"
-                let messageToSend = """
-                Run & Read - A Bug Report
-                <br><br>
-                ==Report Begins==========<br>
-                Input here your feedback or the details of the issues you have.
-                <br>==Report Ends============
-                <br><br>
-                Error: \(error)
-                <br><br>
-                OS Version: \(ProcessInfo.processInfo.operatingSystemVersionString)
-                <br>
-                Model: \(UIDevice.current.model)
-                <br>
-                App Version: \(Bundle.main.fullVersion)
-                <br>
-                """
-                
-                EmailService.shared.sendEmail(
-                    subject: "Run & Read - Bug Report",
-                    body: messageToSend,
-                    to: "support@answersolutions.net"
-                ) { (canSend, sent) in
-                    if !sent {
-                        print("Email not sent")
-                    } else {
-                        print("Email sent")
-                    }
-                    viewModel.errorMessage = nil
-                }
-            }
-        } message: { error in
-            Text(error)
         }
-        .sheet(isPresented: $viewModel.showFilePicker) {
-            DocumentPicker(onFileSelected: { fileURL in
-                //TimeLogger.start("onFileSelected", message: "DocumentPicker")
-                DispatchQueue.main.async {
-                    self.viewModel.bookManager.inProgress = true
-                    viewModel.showFilePicker = false
-                    viewModel.onFileSelected(fileURL: fileURL)
-                }
-            }, onError: { error in
-                nprint("Error: \(error.localizedDescription)")
-            })
-        }
-                .onChange(of: scenePhase) { newPhase in
-                    switch newPhase {
-                    case .active:
-                        nprint("App is active (foreground)")
-                        viewModel.onBackToForegraund()
-                    case .inactive:
-                        nprint("App is inactive")
-                    case .background:
-                        nprint("App is in the background")
-                    @unknown default:
-                        nprint("Unknown scene phase")
-                    }
-                }
-                .onAppear {
-                    if !isPreview {
-                        viewModel.loadBooks()
-                    }
-                }
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .principal) {
-                        Text("Eyes-Free Library").font(.title2)
-                    }
-                }
-                .navigationBarItems(leading: aboutButton, trailing: addButton)
-                .navigationBarHidden(false)
-                .navigationBarBackButtonHidden(true)
+    } message: { error in
+        Text(error)
     }
+    .sheet(isPresented: $viewModel.showFilePicker) {
+        DocumentPicker(onFileSelected: { fileURL in
+            DispatchQueue.main.async {
+                self.viewModel.bookManager.inProgress = true
+                viewModel.showFilePicker = false
+                viewModel.onFileSelected(fileURL: fileURL)
+            }
+        }, onError: { error in
+            nprint("Error: \(error.localizedDescription)")
+        })
+    }
+    .onChange(of: scenePhase) { newPhase in
+        switch newPhase {
+        case .active:
+            nprint("App is active (foreground)")
+            viewModel.onBackToForegraund()
+        case .inactive:
+            nprint("App is inactive")
+        case .background:
+            nprint("App is in the background")
+        @unknown default:
+            nprint("Unknown scene phase")
+        }
+    }
+    .onAppear {
+        if !isPreview {
+            viewModel.loadBooks()
+        }
+    }
+    .navigationBarTitleDisplayMode(.inline)
+    .toolbar {
+        ToolbarItem(placement: .principal) {
+            Text("Eyes-Free Library").font(.title2)
+        }
+    }
+    .navigationBarItems(leading: aboutButton, trailing: addButton)
+    .navigationBarHidden(false)
+    .navigationBarBackButtonHidden(true)
+}
+
 
     private var emptyLibraryView: some View {
         VStack {
@@ -296,8 +314,8 @@ struct SearchBar: View {
 }
 
 func returnBookManagerForPreview() -> BookManager {
-    let book = Book(title: "This text has been narrated by the Run and Read app! We hope you enjoyed listening!", author: "Author", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 0, bookmarks: [Bookmark(voiceRate: 1, position: 1),Bookmark(voiceRate: 1, position: 2),Bookmark(voiceRate: 1, position: 3),Bookmark(voiceRate: 1, position: 4)])
-    let book2 = Book(title: "Title 2", author: "Author 2", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 1, bookmarks: [Bookmark(voiceRate: 1, position: 1),Bookmark(voiceRate: 1, position: 2),Bookmark(voiceRate: 1, position: 3),Bookmark(voiceRate: 1, position: 4)])
+    let book = Book(title: "This text has been narrated by the Run and Read app! We hope you enjoyed listening!", author: "Author", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 0, bookmarks: [Bookmark(position: 1),Bookmark(position: 2),Bookmark(position: 3),Bookmark(position: 4)])
+    let book2 = Book(title: "Title 2", author: "Author 2", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum..."], lastPosition: 1, bookmarks: [Bookmark(position: 1),Bookmark(position: 2),Bookmark(position: 3),Bookmark(position: 4)])
     let m = BookManager()
     m.currentBook = book
     m.currentBookId = book.id

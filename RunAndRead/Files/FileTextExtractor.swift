@@ -10,11 +10,23 @@ import Foundation
 import EPUBKit
 import SwiftSoup
 import PDFKit
+import ZIPFoundation
+
 
 struct BookFile: Codable {
     let title: String
     let author: String
     let content: [String]
+    let audioPath: String
+    let text: [TextPart]
+}
+
+enum ExtractionError: Error {
+    case invalidFileName
+    case zipExtractionFailed
+    case missingFiles
+    case invalidJSON
+    case fileCopyFailed
 }
 
 class FileTextExtractor {
@@ -37,11 +49,13 @@ class FileTextExtractor {
             do {
                 var book: BookFile
                 switch fileURL.pathExtension.lowercased() {
+                case "randr":
+                    book = try extractAudioBookFromRANDR(fileURL)
                 case "epub":
                     book = try extractTextFromEPUB(fileURL)
                 case "txt":
                     let text = try String(contentsOf: fileURL, encoding: .utf8)
-                    book = BookFile(title: "", author: "", content: [text])
+                    book = BookFile(title: "", author: "", content: [text], audioPath: "", text: [])
                 case "pdf":
                     book = try extractTextFromPDF(fileURL)
                 default:
@@ -54,6 +68,98 @@ class FileTextExtractor {
         }
                 .receive(on: DispatchQueue.main)
                 .eraseToAnyPublisher()
+    }
+    
+    static func extractAudioBookFromRANDR(_ fileURL: URL) throws -> BookFile {
+        guard !fileURL.absoluteString.contains(" ") else {
+            throw NSError(domain: "FileError", code: 236, userInfo: [NSLocalizedDescriptionKey: "Spaces in file name"])
+        }
+        print("extractAudioBookFromRANDR.1")
+        let fileName = fileURL.lastPathComponent
+        let fileNameWithoutExtension = fileURL.deletingPathExtension().lastPathComponent
+        let rootDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let extractionDirectory = rootDirectory.appendingPathComponent("temp_extracted_\(fileNameWithoutExtension)")
+        print("extractAudioBookFromRANDR.2")
+        // Create extraction directory if needed
+        try? FileManager.default.removeItem(at: extractionDirectory)
+        try? FileManager.default.createDirectory(at: extractionDirectory, withIntermediateDirectories: true)
+        print("extractAudioBookFromRANDR.fileURL=>\(fileURL.absoluteString)")
+        print("extractAudioBookFromRANDR.extractionDirectory=>\(extractionDirectory.absoluteString)")
+        // Extract the zip file
+        // Extract ZIP archive (RANDR file)
+            do {
+                
+                try FileManager.default.unzipItem(at: fileURL, to: extractionDirectory)
+                print("✅ Extraction complete: \(extractionDirectory.absoluteString)")
+            } catch {
+                print("❌ ZIP extraction error: \(error)")
+                throw ExtractionError.zipExtractionFailed
+            }
+        // Locate the extracted files
+        // temp_extracted_pg2680/
+        //  |--pg2680.randr
+        //        |--book.json
+        //        |--audio.mp3
+        let extractedFiles = try FileManager.default.contentsOfDirectory(at: extractionDirectory.appendingPathComponent(fileName), includingPropertiesForKeys: nil)
+        extractedFiles.forEach { file in
+            print(".=>\(file.absoluteString)")
+        }
+        guard let bookJSONURL = extractedFiles.first(where: { $0.lastPathComponent == "book.json" }),
+              let audioFileURL = extractedFiles.first(where: { $0.lastPathComponent == "audio.mp3" }) else {
+            throw ExtractionError.missingFiles
+        }
+
+        // Read and parse the book.json
+        let jsonData = try Data(contentsOf: bookJSONURL)
+        let decoder = JSONDecoder()
+        let parsedBook: [String: Any]
+        
+        do {
+            parsedBook = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] ?? [:]
+        } catch {
+            throw ExtractionError.invalidJSON
+        }
+
+        // Extract book properties
+        guard let title = parsedBook["title"] as? String,
+              let author = parsedBook["author"] as? String,
+              let textPartsArray = parsedBook["text"] as? [[String: Any]] else {
+            throw ExtractionError.invalidJSON
+        }
+
+        let textParts: [TextPart] = textPartsArray.compactMap { dict in
+            guard let start_time_ms = dict["start_time_ms"] as? Int,
+                  let text = dict["text"] as? String else { return nil }
+            return TextPart(start_time_ms: start_time_ms, text: text)
+        }
+
+        // Move audio file to a permanent location
+        let audioPath = "audio/\(fileNameWithoutExtension)/audio.mp3"
+        let audioDestination = rootDirectory.appendingPathComponent("audio/\(fileNameWithoutExtension)/")
+        try FileManager.default.createDirectory(at: audioDestination, withIntermediateDirectories: true)
+        let finalAudioPath = audioDestination.appendingPathComponent("audio.mp3")
+        print("finalAudioPath.=>\(finalAudioPath.absoluteString)")
+        do {
+            try FileManager.default.removeItem(at: finalAudioPath)
+        } catch {
+        }
+        do {
+            try FileManager.default.moveItem(at: audioFileURL, to: finalAudioPath)
+        } catch {
+            throw ExtractionError.fileCopyFailed
+        }
+
+        // Clean up extraction directory
+        try? FileManager.default.removeItem(at: extractionDirectory)
+
+        // Return extracted book file info
+        return BookFile(
+            title: title,
+            author: author,
+            content: [],
+            audioPath: audioPath,
+            text: textParts
+        )
     }
 
     static func extractContent(document: EPUBDocument?) -> [String] {
@@ -113,7 +219,9 @@ class FileTextExtractor {
         let book = BookFile(
                 title: document.title ?? "Unknown",
                 author: document.author ?? "Unknown",
-                content: extractContent(document: document)
+                content: extractContent(document: document),
+                audioPath: "",
+                text: []
         )
         let fileManager = FileManager.default
         let tempFolderURL = document.directory
@@ -154,7 +262,7 @@ class FileTextExtractor {
         return BookFile(
                 title: title,
                 author: author,
-                content: content
+                content: content, audioPath: "", text: []
         )
     }
 
@@ -234,7 +342,7 @@ class FileTextExtractor {
         return BookFile(
                 title: title,
                 author: author,
-                content: content
+                content: content, audioPath: "", text: []
         )
     }
 }

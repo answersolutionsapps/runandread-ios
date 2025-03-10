@@ -19,16 +19,22 @@ class BookPlayerViewModel: ObservableObject {
 
     private var bookManager: BookManager
     private var player: TextToSpeechPlayer
-
-    init(path: Binding<NavigationPath>, bookManager: BookManager, player: TextToSpeechPlayer) {
+    private var audioPlayer: AudioBookPlayer
+    
+    init(path: Binding<NavigationPath>,
+         bookManager: BookManager,
+         player: TextToSpeechPlayer,
+         audioPlayer: AudioBookPlayer
+    ) {
         self.bookManager = bookManager
         self.player = player
+        self.audioPlayer = audioPlayer
         _path = path
     }
 
     func setupBook() {
         bookManager.loadCurrentBook {
-            if let b = self.bookManager.currentBook {
+            if let b = self.bookManager.currentBook as? Book {
                 DispatchQueue.main.async {
                     self.player.setup(
                             currentBook: b,
@@ -57,12 +63,58 @@ class BookPlayerViewModel: ObservableObject {
                     self.currentFrame = []
                     self.currentWordIndexInFrame = -1
                 }
+            } else if let b = self.bookManager.currentBook as? AudioBook {
+                DispatchQueue.main.async {
+                    self.audioPlayer.setup(
+                        currentBook: b,
+                        onSetUp: { _, durationString, duration, progress, elapsedTime, frame, indexInFrame in
+                            self.currentDuration = Float(duration)
+                            self.currentDurationString = durationString
+                            self.currentFrame = frame
+                            self.currentTimeString = progress
+                            self.currentWordIndexInFrame = indexInFrame
+                            self.currentTime = Float(elapsedTime)
+                            self.bookManager.updateLastPosition(for: b.id, newPosition: Int(elapsedTime))
+                        },
+                        progressCallback: { progress, elapsedTime, frame, indexInFrame in
+                            DispatchQueue.main.async {
+                                self.currentFrame = frame
+                                self.currentTimeString = progress
+                                self.currentWordIndexInFrame = indexInFrame
+                                self.currentTime = Float(elapsedTime)
+                                self.bookManager.updateLastPosition(for: b.id, newPosition: Int(elapsedTime))
+                            }
+                        },
+                        onAddBookmarkCallback: {
+                            self.bookManager.addABookmark()
+                        }
+                    )
+                }
             }
         }
     }
+    
+    @MainActor func setupForPreview() {
+        player.setup(currentBook:  Book(title: "This text has been narrated by the Run and Read app! We hope you enjoyed listening!", author: "Author", language: Locale.current, voiceIdentifier: AVSpeechSynthesisVoice(language: Locale.current.identifier)?.identifier, voiceRate: 0.5, text: ["lorem ipsum...","Test", "Test", "This text has been narrated", "This text has been narrated"], lastPosition: 0, bookmarks: [Bookmark(position: 1),Bookmark(position: 2),Bookmark(position: 3),Bookmark(position: 4)]))
+        
+        { _, progress, currentWord, frame, indexInFrame in
+            
+        } progressCallback: { progress, currentWord, frame, indexInFrame in
+            
+        } onAddBookmarkCallback: {
+            self.bookManager.addABookmark()
+        }
+        self.currentFrame = []
+        self.currentWordIndexInFrame = -1
+    }
 
     @MainActor func stopPlayer() {
-        self.player.stop()
+        if self.bookManager.currentBook is Book {
+            self.player.stop()
+        } else {
+            self.audioPlayer.stop()
+        }
+        
         self.bookManager.persist { _ in
 
         }
@@ -85,12 +137,21 @@ class BookPlayerViewModel: ObservableObject {
         path.append(AppScreen.newBook)
     }
 
-    @MainActor func updatePosition(book: Book) {
+    @MainActor func updatePosition(book: any RunAndReadBook) {
         self.bookManager.updateLastPosition(for: book.id, newPosition: Int(currentTime))
-        self.player.onPrepareForPlayFromNewPosition()
-        self.player.defineCurrentWordIndex(value: Int(currentTime)) { label in
-            self.currentTimeString = label
+        
+        if self.bookManager.currentBook is Book {
+            self.player.onPrepareForPlayFromNewPosition()
+            self.player.defineCurrentWordIndex(value: Int(currentTime)) { label in
+                self.currentTimeString = label
+            }
+        } else {
+            self.audioPlayer.defineElapsedTime(value: Int(currentTime)) { label in
+                self.currentTimeString = label
+            }
         }
+        
+        
     }
 
     func addBookmark() {
@@ -101,8 +162,10 @@ class BookPlayerViewModel: ObservableObject {
         return !player.isNotUndefined()
     }
 
-    @MainActor func currentBook() -> Book? {
-        if player.isNotUndefined() {
+    @MainActor func currentBook() -> (any RunAndReadBook)? {
+        if bookManager.currentBook is AudioBook && audioPlayer.isNotUndefined() {
+            return bookManager.currentBook
+        } else if player.isNotUndefined() {
             return bookManager.currentBook
         } else {
             return nil
@@ -112,34 +175,66 @@ class BookPlayerViewModel: ObservableObject {
     //----Player
 
     @MainActor func onPlayPause() {
-        player.playPause()
+        if self.bookManager.currentBook is Book{
+            player.playPause()
+        } else {
+            audioPlayer.playPause()
+        }
+       
     }
 
     @MainActor func onRewind() {
-        player.rewind()
+        if self.bookManager.currentBook is Book {
+            player.rewind()
+        }else {
+            audioPlayer.rewind()
+        }
+        
     }
 
     @MainActor func onFastForward() {
-        player.fastForward()
+        if self.bookManager.currentBook is Book{
+            player.fastForward()
+        }else {
+            audioPlayer.fastForward()
+        }
     }
 
     @MainActor func playButtonIconName() -> String {
-        return player.isPlaying() ? "pause.circle.fill" : "play.circle.fill"
+        if self.bookManager.currentBook is Book {
+            return player.isPlaying() ? "pause.circle.fill" : "play.circle.fill"
+        }else {
+            return audioPlayer.isPlaying() ? "pause.circle.fill" : "play.circle.fill"
+        }
     }
 
     @MainActor func isPlaying() -> Bool {
-        return player.isPlaying()
+        if self.bookManager.currentBook is Book {
+            return player.isPlaying()
+        } else {
+            return audioPlayer.isPlaying()
+        }
     }
-
-    @MainActor func textForBookmark(bookmark: Bookmark, book: Book) -> String {
-        return player.textForBookmark(bookmark: bookmark, book: book) ?? "Loading.."
+    
+    @MainActor func generateBookmarks(book: any RunAndReadBook) {
+        if let b = book as? Book {
+            player.generateBookmarks(book: b)
+        } else if let b = book as? AudioBook {
+            audioPlayer.generateBookmarks(book: b)
+        }
     }
 
     @MainActor func onBookmarkSelect(bookmark: Bookmark) {
-        self.player.onPrepareForPlayFromNewPosition()
-        self.player.defineCurrentWordIndex(value: Int(bookmark.position))
-        self.player.updateProgress()
-        self.player.playPause()
+        if self.bookManager.currentBook is Book {
+            self.player.onPrepareForPlayFromNewPosition()
+            self.player.defineCurrentWordIndex(value: Int(bookmark.position))
+            self.player.updateProgress()
+            self.player.playPause()
+        }else {
+            self.audioPlayer.defineElapsedTime(value: Int(bookmark.position))
+            self.audioPlayer.updateProgress()
+            self.audioPlayer.playPause()
+        }
     }
 }
 

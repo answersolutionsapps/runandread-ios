@@ -14,6 +14,7 @@ class BookSettingsViewModel: ObservableObject {
     @Published var author: String = ""
     @Published var textPreview: String = "..."
     @Published var contextText: [String] = []
+    @Published var contextParts: [TextPart] = []
     @Published var isPresentingConfirm: Bool = false
     @Published var selectedLanguage: Locale = Locale.current
     @Published var selectedVoice: AVSpeechSynthesisVoice = AVSpeechSynthesisVoice(language: Locale.current.identifier) ?? AVSpeechSynthesisVoice()
@@ -22,25 +23,65 @@ class BookSettingsViewModel: ObservableObject {
     @Published var showLanguagePicker: Bool = false
     @Published var showVoicePicker: Bool = false
     
+    func getDefaultVoiceRate() -> Float {
+        if (bookManager.currentBook is AudioBook) {
+            return defaultVoiceRate
+        } else {
+            return defaultVoiceRate.playbackRateToSpeed()
+        }
+    }
+    
+    func onRateChanges(value: Float) {
+        if (bookManager.currentBook is AudioBook) {
+            defaultVoiceRate = value
+        } else {
+            defaultVoiceRate = value.speedToPlaybackRate()
+        }
+    }
+    
     func invalidBook() -> Bool {
-        return title.isEmpty || author.isEmpty || contextText.isEmpty
+        if (title.isEmpty || author.isEmpty ) {
+            return true
+        }
+        
+        if (bookManager.currentBook is Book && contextText.isEmpty) {
+            return true
+        }
+        
+        return false
+    }
+    
+    private func voiceRateDefault() -> Float {
+        if (bookManager.currentBook is AudioBook) {
+            return 1.0
+        } else {
+            return 0.5
+        }
     }
     
     func onSelectVoice(voice: AVSpeechSynthesisVoice) {
         selectedVoice = voice
         if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate.speedToPlaybackRate()
+            if (bookManager.currentBook is AudioBook) {
+                defaultVoiceRate = voiceRate
+            } else {
+                defaultVoiceRate = voiceRate.speedToPlaybackRate()
+            }
         } else {
-            defaultVoiceRate = 0.5
+            defaultVoiceRate = voiceRateDefault()
         }
     }
     
     func onSelectLanguage(language: Locale) {
         selectedLanguage = language
         if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate.speedToPlaybackRate()
+            if (bookManager.currentBook is AudioBook) {
+                defaultVoiceRate = voiceRate
+            } else {
+                defaultVoiceRate = voiceRate.speedToPlaybackRate()
+            }
         } else {
-            defaultVoiceRate = 0.5
+            defaultVoiceRate = voiceRateDefault()
         }
         
         var availableVoices: [AVSpeechSynthesisVoice] {
@@ -71,6 +112,7 @@ class BookSettingsViewModel: ObservableObject {
 
     private var bookManager: BookManager
     private var simplePlayer: SimpleTTSPlayer
+    private var audioPlayer: AVAudioPlayer?
 
     init(path: Binding<NavigationPath>, bookManager: BookManager, simplePlayer: SimpleTTSPlayer) {
         self.bookManager = bookManager
@@ -80,24 +122,31 @@ class BookSettingsViewModel: ObservableObject {
     }
 
     func loadSelectedVoice() {
+        if let book =  bookManager.currentBook as? Book {
+            selectedVoice = book.voice
+        }
+        if let voiceRate = bookManager.currentBook?.voiceRate {
+            if (bookManager.currentBook is AudioBook) {
+                defaultVoiceRate = voiceRate
+            } else {
+                defaultVoiceRate = voiceRate.speedToPlaybackRate()
+            }
+        } else {
+            defaultVoiceRate = voiceRateDefault()
+        }
         if let language = bookManager.currentBook?.language {
             selectedLanguage = language
         }
-
-        if let voice = bookManager.currentBook?.voice {
-            selectedVoice = voice
-        } else {
-            selectedVoice = AVSpeechSynthesisVoice(language: selectedLanguage.identifier) ?? AVSpeechSynthesisVoice()
-        }
-
-        if let voiceRate = bookManager.currentBook?.voiceRate {
-            defaultVoiceRate = voiceRate.speedToPlaybackRate()
-        }
+    }
+    
+    func isAudioBook() -> Bool {
+        return (bookManager.currentBook is AudioBook)
     }
 
     func saveBook() {
+        audioPlayer?.stop()
         let safeIndex = min(selectedPart, contextText.count)
-        if let book = bookManager.currentBook {
+        if let book = bookManager.currentBook as? Book {
             book.title = title
             book.author = author
             book.language = selectedLanguage
@@ -114,31 +163,70 @@ class BookSettingsViewModel: ObservableObject {
                     print("Failed to save book: \(error.localizedDescription)")
                 }
             }
-        } else {
-            let book = Book(
-                    title: title,
-                    author: author,
-                    language: selectedLanguage,
-                    voiceIdentifier: selectedVoice.identifier,
-                    voiceRate: defaultVoiceRate.playbackRateToSpeed(),
-                    text: Array(contextText.suffix(from: safeIndex).map {
-                        "\($0). "
-                    }),
-                    lastPosition: 0,
-                    bookmarks: []
-            )
+        } else if let book = bookManager.currentBook as? AudioBook {
+            book.title = title
+            book.author = author
+            book.language = selectedLanguage
+            book.voiceRate = defaultVoiceRate
 
-            bookManager.saveBookToLibrary(book: book) { result in
+            bookManager.saveAudioBookToLibrary(book: book) { result in
                 switch result {
                 case .success(let fileURL):
                     print("Book saved successfully at: \(fileURL.path)")
-                    self.bookManager.saveCurrentBook(book: book) {
-                        self.path.append(AppScreen.player)
-                    }
+                    self.path.append(AppScreen.player)
                 case .failure(let error):
                     print("Failed to save book: \(error.localizedDescription)")
                 }
             }
+        } else {
+            if let fileURL = bookManager.audioPath {
+                let book = AudioBook(
+                    title: title,
+                    author: author,
+                    language: selectedLanguage,
+                    voiceRate: defaultVoiceRate,
+                    parts: bookManager.plainTextPartData,
+                    audioFilePath:fileURL
+                )
+                
+                bookManager.saveAudioBookToLibrary(book: book) { result in
+                    switch result {
+                    case .success(let fileURL):
+                        print("Book saved successfully at: \(fileURL.path)")
+                        self.bookManager.saveCurrentBook(book: book) {
+                            self.path.append(AppScreen.player)
+                        }
+                    case .failure(let error):
+                        print("Failed to save book: \(error.localizedDescription)")
+                    }
+                }
+            } else {
+                let book = Book(
+                        title: title,
+                        author: author,
+                        language: selectedLanguage,
+                        voiceIdentifier: selectedVoice.identifier,
+                        voiceRate: defaultVoiceRate.playbackRateToSpeed(),
+                        text: Array(contextText.suffix(from: safeIndex).map {
+                            "\($0). "
+                        }),
+                        lastPosition: 0,
+                        bookmarks: []
+                )
+
+                bookManager.saveBookToLibrary(book: book) { result in
+                    switch result {
+                    case .success(let fileURL):
+                        print("Book saved successfully at: \(fileURL.path)")
+                        self.bookManager.saveCurrentBook(book: book) {
+                            self.path.append(AppScreen.player)
+                        }
+                    case .failure(let error):
+                        print("Failed to save book: \(error.localizedDescription)")
+                    }
+                }
+            }
+            
         }
     }
 
@@ -148,17 +236,36 @@ class BookSettingsViewModel: ObservableObject {
             textPreview = ""
             contextText = ["With this approach, you can now have selectable text in your view without allowing the user to modify the content. The text will be fully selectable, and users will be able to copy it to the clipboard by selecting and using the standard copy commands.", "Lorem ipsum2", "Lorem ipsum3"]
         }
-        if let book = bookManager.currentBook {
+        if let book = bookManager.currentBook as? Book {
             textPreview = currentPart(parts: book.text)
             contextText = book.text
             title = book.title
             author = book.author
+        } else if let book = bookManager.currentBook as? AudioBook {
+            title = book.title
+            author = book.author
+            contextParts = bookManager.plainTextPartData
+            textPreview = currentTextPart(parts: bookManager.plainTextPartData)
         } else {
             title = bookManager.titleData
             author = bookManager.authorData
-            textPreview = currentPart(parts: bookManager.plainTextData)
-            contextText = bookManager.plainTextData
+            
+            if let fileURL = bookManager.audioPath {
+                contextParts = bookManager.plainTextPartData
+                textPreview = currentTextPart(parts: bookManager.plainTextPartData)
+            } else {
+                textPreview = currentPart(parts: bookManager.plainTextData)
+                contextText = bookManager.plainTextData
+            }
         }
+    }
+    
+    private func currentTextPart(parts: [TextPart]) -> String {
+        if parts.isEmpty {
+            return ""
+        }
+        let safeIndex = min(selectedPart, contextParts.count)
+        return parts[safeIndex].text
     }
 
     private func currentPart(parts: [String]) -> String {
@@ -180,15 +287,37 @@ class BookSettingsViewModel: ObservableObject {
     }
 
     func onCancel() {
+        audioPlayer?.stop()
         path.removeLast()
     }
 
     //----- Player
 
     func onPlayPauseText() {
-        let text = textPreview.substringTwoSentences()
-        let r = defaultVoiceRate
-        simplePlayer.startTextToSpeech(text: text, voice: selectedVoice, rate: r)
+        if let book =  bookManager.currentBook as? AudioBook, let path = book.pathToAudio() {
+            if audioPlayer?.isPlaying == true {
+                audioPlayer?.stop()
+            } else {
+                    do {
+                        if (audioPlayer == nil){
+                            audioPlayer = try AVAudioPlayer(contentsOf: path)
+                        }
+                        audioPlayer?.enableRate = true
+                        audioPlayer?.prepareToPlay()
+                        nprint("audioPlayer?.rate=>\(audioPlayer?.rate)")
+                        nprint("audioPlayer?.defaultVoiceRate=>\(defaultVoiceRate)")
+                        nprint("audioPlayer?.book.voiceRate)=>\(book.voiceRate)")
+                        audioPlayer?.rate = Float(defaultVoiceRate)
+                        audioPlayer?.play()
+                    } catch {
+                        print("Error playing file \(path.absoluteString): \(error.localizedDescription)")
+                    }
+            }
+        } else {
+            let text = textPreview.substringTwoSentences()
+            let r = defaultVoiceRate
+            simplePlayer.startTextToSpeech(text: text, voice: selectedVoice, rate: r)
+        }
     }
     
     func onPlayPauseText2(rate: Float = 0.5) {
@@ -202,7 +331,7 @@ class BookSettingsViewModel: ObservableObject {
     }
 
     func onDeleteBook() {
-        if let book = bookManager.currentBook {
+        if let book = bookManager.currentBook as? Book {
             bookManager.deleteBookFromLibrary(book: book) { result in
                 switch result {
                 case .success:
@@ -219,6 +348,8 @@ class BookSettingsViewModel: ObservableObject {
                     print("❌ Failed to delete book: \(error.localizedDescription)")
                 }
             }
+        } else if let book = bookManager.currentBook as? AudioBook {
+            
         }
     }
 }

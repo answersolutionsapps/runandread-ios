@@ -10,29 +10,29 @@ import SwiftUI
 
 extension Double {
     private static var timeHMSFormatter: DateComponentsFormatter = {
-          let formatter = DateComponentsFormatter()
-          formatter.unitsStyle = .positional
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .positional
         formatter.allowedUnits = [.hour, .minute, .second]
-          formatter.zeroFormattingBehavior = [.pad]
-          return formatter
-      }()
-    
+        formatter.zeroFormattingBehavior = [.pad]
+        return formatter
+    }()
+
     private static var timeMSFormatter: DateComponentsFormatter = {
-          let formatter = DateComponentsFormatter()
-          formatter.unitsStyle = .positional
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .positional
         formatter.allowedUnits = [.minute, .second]
-          formatter.zeroFormattingBehavior = [.pad]
-          return formatter
-      }()
-      
+        formatter.zeroFormattingBehavior = [.pad]
+        return formatter
+    }()
+
     func formatSecondsToHMS(_ seconds: Double) -> String {
         if seconds.isNaN {
             return "00:00"
         }
         if seconds < 3600 {
-           return Double.timeMSFormatter.string(from: seconds)!
-        } else  {
-           return Double.timeHMSFormatter.string(from: seconds)!
+            return Double.timeMSFormatter.string(from: seconds)!
+        } else {
+            return Double.timeHMSFormatter.string(from: seconds)!
         }
     }
 }
@@ -59,7 +59,7 @@ extension Float {
             return "1.0"
         }
     }
-    
+
     func playbackRateToSpeed() -> Float {
         let roundedValue = (self * 100).rounded() / 100 // Rounds to nearest 0.01
         switch roundedValue {
@@ -81,7 +81,7 @@ extension Float {
             return 1.0
         }
     }
-    
+
     func speedToPlaybackRate() -> Float {
         let roundedValue = (self * 100).rounded() / 100 // Rounds to nearest 0.01
         switch roundedValue {
@@ -151,18 +151,26 @@ struct AttributedText: UIViewRepresentable {
 
 extension String {
     func substring(with nsRange: NSRange) -> String? {
-        guard let range = Range(nsRange, in: self) else { return nil }
+        guard let range = Range(nsRange, in: self) else {
+            return nil
+        }
         return String(self[range])
     }
+
     func substring(upTo nsRange: NSRange) -> String? {
-        guard let range = Range(nsRange, in: self) else { return nil }
+        guard let range = Range(nsRange, in: self) else {
+            return nil
+        }
         return String(self[..<range.lowerBound])
     }
+
     func substring(after nsRange: NSRange) -> String? {
-        guard let range = Range(nsRange, in: self) else { return nil }
+        guard let range = Range(nsRange, in: self) else {
+            return nil
+        }
         return String(self[range.upperBound...])
     }
-    
+
     func substringTwoSentences() -> String {
         var spaceCount = 0
         for (index, char) in self.enumerated() {
@@ -180,12 +188,12 @@ extension String {
 struct ListSeparatorNone: ViewModifier {
 
     var backgroundColor: Color = Color(.systemBackground)
-    
+
     func body(content: Content) -> some View {
         content
-            .listRowInsets(EdgeInsets(top: -1, leading: 0, bottom: 0, trailing: 0))
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .background(backgroundColor)
+                .listRowInsets(EdgeInsets(top: -1, leading: 0, bottom: 0, trailing: 0))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .background(backgroundColor)
     }
 }
 
@@ -228,39 +236,39 @@ extension View {
     //fix for warning: 'Publishing changes from within view updates is not allowed, this will cause undefined behaviour'
     func sync(_ published: Binding<Bool>, with binding: Binding<Bool>) -> some View {
         self
-            .onChange(of: published.wrappedValue) { published in
-                binding.wrappedValue = published
-            }
-            .onChange(of: binding.wrappedValue) { binding in
-                published.wrappedValue = binding
-            }
+                .onChange(of: published.wrappedValue) { published in
+                    binding.wrappedValue = published
+                }
+                .onChange(of: binding.wrappedValue) { binding in
+                    published.wrappedValue = binding
+                }
     }
-    
+
     func aSolBadge(count: Int) -> some View {
         overlay(
-            ZStack {
-                if count != 0 {
-                    Text("\(count)")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .padding(4)
-                        .background(RoundedRectangle(cornerRadius: 44)
-                            .fill(Color.red)
-                        )
-                        .foregroundColor(.white)
-                        .opacity(0.9)
+                ZStack {
+                    if count != 0 {
+                        Text("\(count)")
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                                .padding(4)
+                                .background(RoundedRectangle(cornerRadius: 44)
+                                        .fill(Color.red)
+                                )
+                                .foregroundColor(.white)
+                                .opacity(0.9)
+                    }
                 }
-            }
-            .offset(x: 28, y: -10)
-            .frame(width: 36, height: 24)
-        , alignment: .topTrailing)
+                        .offset(x: 28, y: -10)
+                        .frame(width: 36, height: 24)
+                , alignment: .topTrailing)
     }
 }
 
 extension UIFont {
-  class func preferredFont(from font: Font) -> UIFont {
-    let style: UIFont.TextStyle
-      switch font {
+    class func preferredFont(from font: Font) -> UIFont {
+        let style: UIFont.TextStyle
+        switch font {
         case .largeTitle:  style = .largeTitle
         case .title:       style = .title1
         case .title2:      style = .title2
@@ -273,9 +281,9 @@ extension UIFont {
         case .footnote:    style = .footnote
         case .body: fallthrough
         default:           style = .body
-     }
-     return  UIFont.preferredFont(forTextStyle: style)
-   }
+        }
+        return UIFont.preferredFont(forTextStyle: style)
+    }
 }
 
 func nprint(_ items: Any...) {
@@ -290,53 +298,55 @@ func nprint(_ message: String, function: String = #function) {
     #endif
 }
 
-func BG(_ block: @escaping ()->Void) {
+func BG(_ block: @escaping () -> Void) {
     DispatchQueue.global(qos: .default).async(execute: block)
 }
 
-func UI(_ block: @escaping ()->Void) {
+func UI(_ block: @escaping () -> Void) {
     DispatchQueue.main.async(execute: block)
 }
 
 extension UINavigationController {
-    
+
     ///Get previous view controller of the navigation stack
-    func previousViewController() -> UIViewController?{
-        
+    func previousViewController() -> UIViewController? {
+
         let lenght = self.viewControllers.count
-        
-        let previousViewController: UIViewController? = lenght >= 2 ? self.viewControllers[lenght-2] : nil
-        
+
+        let previousViewController: UIViewController? = lenght >= 2 ? self.viewControllers[lenght - 2] : nil
+
         return previousViewController
     }
-    
+
 }
 
 extension UIView {
     class func fromNib<T: UIView>() -> T {
         return Bundle.main.loadNibNamed(String(describing: T.self), owner: nil, options: nil)![0] as! T
     }
-    
+
     func roundCorners(cornerRadius: Double) {
         self.layer.cornerRadius = CGFloat(cornerRadius)
         self.clipsToBounds = true
     }
 }
 
-extension CGRect{
-    init(_ x:CGFloat,_ y:CGFloat,_ width:CGFloat,_ height:CGFloat) {
-        self.init(x:x,y:y,width:width,height:height)
+extension CGRect {
+    init(_ x: CGFloat, _ y: CGFloat, _ width: CGFloat, _ height: CGFloat) {
+        self.init(x: x, y: y, width: width, height: height)
     }
-    
+
 }
-extension CGSize{
-    init(_ width:CGFloat,_ height:CGFloat) {
-        self.init(width:width,height:height)
+
+extension CGSize {
+    init(_ width: CGFloat, _ height: CGFloat) {
+        self.init(width: width, height: height)
     }
 }
-extension CGPoint{
-    init(_ x:CGFloat,_ y:CGFloat) {
-        self.init(x:x,y:y)
+
+extension CGPoint {
+    init(_ x: CGFloat, _ y: CGFloat) {
+        self.init(x: x, y: y)
     }
 }
 
@@ -347,26 +357,26 @@ func CGRectMake(_ x: CGFloat, _ y: CGFloat, _ width: CGFloat, _ height: CGFloat)
 
 extension UIViewController {
     // Helper for showing an alert
-    func showAlert(title : String, message: String) {
+    func showAlert(title: String, message: String) {
         let alert = UIAlertController(
-            title: title,
-            message: message,
-            preferredStyle: .alert
+                title: title,
+                message: message,
+                preferredStyle: .alert
         )
         let ok = UIAlertAction(
-            title: "OK",
-            style: .default,
-            handler: nil
+                title: "OK",
+                style: .default,
+                handler: nil
         )
         alert.addAction(ok)
         present(alert, animated: true, completion: nil)
     }
-    
-    func showDialog(title : String, message: String, action1:UIAlertAction, action2:UIAlertAction) {
+
+    func showDialog(title: String, message: String, action1: UIAlertAction, action2: UIAlertAction) {
         let alert = UIAlertController(
-            title: title,
-            message: message,
-            preferredStyle: .alert
+                title: title,
+                message: message,
+                preferredStyle: .alert
         )
         alert.addAction(action1)
         alert.addAction(action2)
@@ -379,22 +389,22 @@ extension UIColor {
         assert(red >= 0 && red <= 255, "Invalid red component")
         assert(green >= 0 && green <= 255, "Invalid green component")
         assert(blue >= 0 && blue <= 255, "Invalid blue component")
-        
+
         self.init(red: CGFloat(red) / 255.0, green: CGFloat(green) / 255.0, blue: CGFloat(blue) / 255.0, alpha: 1.0)
     }
-    
-    convenience init(netHex:Int) {
-        self.init(red:(netHex >> 16) & 0xff, green:(netHex >> 8) & 0xff, blue:netHex & 0xff)
+
+    convenience init(netHex: Int) {
+        self.init(red: (netHex >> 16) & 0xff, green: (netHex >> 8) & 0xff, blue: netHex & 0xff)
     }
 }
 
 extension String {
     func capitalizingFirstLetter() -> String {
-      return prefix(1).uppercased() + self.lowercased().dropFirst()
+        return prefix(1).uppercased() + self.lowercased().dropFirst()
     }
 
     mutating func capitalizeFirstLetter() {
-      self = self.capitalizingFirstLetter()
+        self = self.capitalizingFirstLetter()
     }
 }
 
@@ -410,19 +420,23 @@ class VerticallyCenteredTextView: UITextView {
 
 
 extension String {
-    var htmlStripped : String{
+    var htmlStripped: String {
         return self.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression, range: nil)
     }
 }
 
 extension String {
     func applyPatternOnNumbers(pattern: String, replacementCharacter: Character) -> String {
-        var pureNumber = self.replacingOccurrences( of: "[^0-9]", with: "", options: .regularExpression)
-        for index in 0 ..< pattern.count {
-            guard index < pureNumber.count else { return pureNumber }
+        var pureNumber = self.replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression)
+        for index in 0..<pattern.count {
+            guard index < pureNumber.count else {
+                return pureNumber
+            }
             let stringIndex = String.Index(utf16Offset: index, in: pattern)
             let patternCharacter = pattern[stringIndex]
-            guard patternCharacter != replacementCharacter else { continue }
+            guard patternCharacter != replacementCharacter else {
+                continue
+            }
             pureNumber.insert(patternCharacter, at: stringIndex)
         }
         return pureNumber
@@ -433,7 +447,7 @@ extension String {
     }
 
     func digitsOnly() -> String {
-        return self.replacingOccurrences( of: "[-( )+]", with: "", options: .regularExpression)
+        return self.replacingOccurrences(of: "[-( )+]", with: "", options: .regularExpression)
     }
 
     func isPhoneNumber() -> Bool {
@@ -474,7 +488,7 @@ extension String {
         dateFormatter.timeStyle = .short
         return dateFormatter.string(from: date)
     }
-    
+
     func toInt() -> Int {
         return Int(self) ?? 0
     }
@@ -482,7 +496,7 @@ extension String {
     func toInt16() -> Int16 {
         return Int16(self) ?? 0
     }
-    
+
     func toKiloInt32() -> Int32 {
         let number = self.replacingOccurrences(of: "K", with: "")
         return 1000 * (Int32(number) ?? 0)
@@ -493,31 +507,31 @@ extension String {
     }
 
     func fromBase64() -> String? {
-         guard let data = Data(base64Encoded: self) else {
-             return nil
-         }
+        guard let data = Data(base64Encoded: self) else {
+            return nil
+        }
 
-         return String(data: data, encoding: .utf8)
-     }
+        return String(data: data, encoding: .utf8)
+    }
 
-     func toBase64() -> String {
-         return Data(self.utf8).base64EncodedString()
-     }
+    func toBase64() -> String {
+        return Data(self.utf8).base64EncodedString()
+    }
 }
 
 extension View {
 
     public func textFieldAlert(
-        isPresented: Binding<Bool>,
-        title: String,
-        message: String = "",
-        text: String = "",
-        placeholder: String = "",
-        action: @escaping (String?) -> Void
+            isPresented: Binding<Bool>,
+            title: String,
+            message: String = "",
+            text: String = "",
+            placeholder: String = "",
+            action: @escaping (String?) -> Void
     ) -> some View {
         self.modifier(TextFieldAlertModifier(isPresented: isPresented, title: title, message: message, text: text, placeholder: placeholder, action: action))
     }
-    
+
 }
 
 public struct TextFieldAlertModifier: ViewModifier {

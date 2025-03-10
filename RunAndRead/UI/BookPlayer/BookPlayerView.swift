@@ -15,12 +15,13 @@ struct BookPlayerView: View {
                         PositionSliderView(book: book)
                         Divider()
                         HorizontalyScrolledTextView(
+                            highlite: (book is Book),
                                 words: viewModel.currentFrame,
                                 index: viewModel.currentWordIndexInFrame,
                                 locale: book.language)
                                 .frame(maxWidth: .infinity, maxHeight: 60)
                         Divider()
-                        PlaybackContrallsView()
+                        PlaybackContrallsView(book: book)
                     } else if viewModel.isInitializing() {
                         Spacer()
                         Text("Loading...")
@@ -38,9 +39,8 @@ struct BookPlayerView: View {
                 .onAppear {
                     if !isPreview {
                         viewModel.setupBook()
-//                    } else {
-//                        viewModel.player.state = .idle
-//                        viewModel.player.words = ["Test", "Test"]
+                    } else {
+                        viewModel.setupForPreview()
                     }
                 }
                 .onDisappear {
@@ -65,7 +65,7 @@ struct BookPlayerView: View {
                 .navigationBarBackButtonHidden(true)
     }
 
-    private func BookCoverDetailsView(book: Book) -> some View {
+    private func BookCoverDetailsView(book: any RunAndReadBook) -> some View {
         return VStack(spacing: 16) {
             Text(book.title)
                     .font(.title)
@@ -78,15 +78,17 @@ struct BookPlayerView: View {
         }
     }
 
-    private func PlaybackContrallsView() -> some View {
+    private func PlaybackContrallsView(book: any RunAndReadBook) -> some View {
         return VStack {
             HStack(spacing: 40) {
                 Button(action: { viewModel.onRewind() }) {
                     Image(systemName: "gobackward.30")
                             .font(.largeTitle)
                 }
-                        .accessibilityLabel("Rewind 5 seconds")
-                Button(action: { viewModel.onPlayPause() }) {
+                        .accessibilityLabel("Rewind 30 seconds")
+                Button(action: {
+                    viewModel.onPlayPause()
+                }) {
                     Image(systemName: viewModel.playButtonIconName())
                             .font(.system(size: 64))
                 }
@@ -95,7 +97,7 @@ struct BookPlayerView: View {
                     Image(systemName: "goforward.30")
                             .font(.largeTitle)
                 }
-                        .accessibilityLabel("Fastforward 5 seconds")
+                        .accessibilityLabel("Fastforward 30 seconds")
             }
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
@@ -103,6 +105,7 @@ struct BookPlayerView: View {
             VStack(alignment: .trailing) {
                 Button(action: {
                     viewModel.addBookmark()
+                    viewModel.generateBookmarks(book: book)
                 }) {
                     Image(systemName: "bookmark.circle")
                             .font(.largeTitle)
@@ -115,7 +118,7 @@ struct BookPlayerView: View {
         }
     }
 
-    private func PositionSliderView(book: Book) -> some View {
+    private func PositionSliderView(book: any RunAndReadBook) -> some View {
         return VStack {
             Slider(value: $viewModel.currentTime,
                     in: 0...viewModel.currentDuration,
@@ -134,10 +137,10 @@ struct BookPlayerView: View {
                 .padding(.horizontal)
     }
 
-    private func BookmarkListView(book: Book) -> some View {
+    private func BookmarkListView(book: any RunAndReadBook) -> some View {
         return List {
             ForEach(book.bookmarks, id: \.position) { item in
-                Text(viewModel.textForBookmark(bookmark: item, book: book))
+                Text(item.text)
                     .font(.title3)
                         .lineLimit(2)
                         .foregroundColor(.secondary)
@@ -158,6 +161,9 @@ struct BookPlayerView: View {
                     }
         }
         .listStyle(.plain)
+        .onAppear {
+            viewModel.generateBookmarks(book: book)
+        }
     }
 }
 
@@ -165,10 +171,11 @@ struct BookPlayerView: View {
 #Preview {
     NavigationView {
         let path = State(initialValue: NavigationPath())
+       
         BookPlayerView(viewModel: BookPlayerViewModel(
                 path: path.projectedValue,
                 bookManager: returnBookManagerForPreview(),
-                player: TextToSpeechPlayer()))
+                player: TextToSpeechPlayer(), audioPlayer: AudioBookPlayer()))
     }
             .environmentObject(returnBookManagerForPreview())
 
