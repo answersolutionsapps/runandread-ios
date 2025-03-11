@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 
 struct BookPlayerView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject var viewModel: BookPlayerViewModel
 
     var body: some View {
@@ -41,6 +42,19 @@ struct BookPlayerView: View {
                         viewModel.setupBook()
                     } else {
                         viewModel.setupForPreview()
+                    }
+                }
+                .onChange(of: scenePhase) { newPhase in
+                    switch newPhase {
+                    case .active:
+                        nprint("App is active (foreground)")
+                        viewModel.onBackToForegraund()
+                    case .inactive:
+                        nprint("App is inactive")
+                    case .background:
+                        nprint("App is in the background")
+                    @unknown default:
+                        nprint("Unknown scene phase")
                     }
                 }
                 .onDisappear {

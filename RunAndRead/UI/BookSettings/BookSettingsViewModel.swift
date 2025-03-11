@@ -140,7 +140,26 @@ class BookSettingsViewModel: ObservableObject {
     }
     
     func isAudioBook() -> Bool {
-        return (bookManager.currentBook is AudioBook)
+        return (bookManager.currentBook is AudioBook || bookManager.audioPath?.hasSuffix(".mp3") == true)
+    }
+    
+    func audioBookVoice() -> String {
+        return (bookManager.currentBook as? AudioBook)?.voice ?? "Unknown"
+    }
+    
+    func audioBookModel() -> String {
+        return (bookManager.currentBook as? AudioBook)?.model ?? "Unknown"
+    }
+    
+    func audioBookSource() -> String {
+        return (bookManager.currentBook as? AudioBook)?.book_source ?? "Unknown"
+    }
+    
+    func audioBookLanguage() -> String {
+        if let locale = (bookManager.currentBook as? AudioBook)?.language {
+            return "\(locale.localizedString(forIdentifier: locale.identifier) ?? "Unknown")"
+        }
+        return "Unknown"
     }
 
     func saveBook() {
@@ -166,7 +185,7 @@ class BookSettingsViewModel: ObservableObject {
         } else if let book = bookManager.currentBook as? AudioBook {
             book.title = title
             book.author = author
-            book.language = selectedLanguage
+//            book.language = selectedLanguage
             book.voiceRate = defaultVoiceRate
 
             bookManager.saveAudioBookToLibrary(book: book) { result in
@@ -180,13 +199,17 @@ class BookSettingsViewModel: ObservableObject {
             }
         } else {
             if let fileURL = bookManager.audioPath {
+                //TODO: This part is not implemented, opened audiobook opens in player
                 let book = AudioBook(
                     title: title,
                     author: author,
                     language: selectedLanguage,
                     voiceRate: defaultVoiceRate,
                     parts: bookManager.plainTextPartData,
-                    audioFilePath:fileURL
+                    audioFilePath:fileURL,
+                    voice: "",
+                    model: "",
+                    book_source: ""
                 )
                 
                 bookManager.saveAudioBookToLibrary(book: book) { result in
@@ -304,13 +327,36 @@ class BookSettingsViewModel: ObservableObject {
                         }
                         audioPlayer?.enableRate = true
                         audioPlayer?.prepareToPlay()
-                        nprint("audioPlayer?.rate=>\(audioPlayer?.rate)")
-                        nprint("audioPlayer?.defaultVoiceRate=>\(defaultVoiceRate)")
-                        nprint("audioPlayer?.book.voiceRate)=>\(book.voiceRate)")
+//                        nprint("audioPlayer?.rate=>\(audioPlayer?.rate)")
+//                        nprint("audioPlayer?.defaultVoiceRate=>\(defaultVoiceRate)")
+//                        nprint("audioPlayer?.book.voiceRate)=>\(book.voiceRate)")
                         audioPlayer?.rate = Float(defaultVoiceRate)
                         audioPlayer?.play()
                     } catch {
                         print("Error playing file \(path.absoluteString): \(error.localizedDescription)")
+                    }
+            }
+        } else if let path =  bookManager.audioPath{
+            if audioPlayer?.isPlaying == true {
+                audioPlayer?.stop()
+            } else {
+                    do {
+                        if (audioPlayer == nil){
+                            let fileManager = FileManager.default
+                            
+                            if let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+                                    let audioFileURL = documentsDirectory.appendingPathComponent(path)
+                                    if fileManager.fileExists(atPath: audioFileURL.path), let url = URL(string: path) {
+                                        audioPlayer = try AVAudioPlayer(contentsOf: url)
+                                    }
+                                }
+                        }
+                        audioPlayer?.enableRate = true
+                        audioPlayer?.prepareToPlay()
+                        audioPlayer?.rate = Float(defaultVoiceRate)
+                        audioPlayer?.play()
+                    } catch {
+                        print("Error playing file \(path): \(error.localizedDescription)")
                     }
             }
         } else {
@@ -349,7 +395,22 @@ class BookSettingsViewModel: ObservableObject {
                 }
             }
         } else if let book = bookManager.currentBook as? AudioBook {
-            
+            bookManager.deleteAudioBookFromLibrary(book: book) { result in
+                switch result {
+                case .success:
+                    print("✅ Audio Book deleted successfully.")
+                    // Remove the book from the UI list
+                    self.bookManager.library.removeAll {
+                        $0.id == book.id
+                    }
+                    self.bookManager.deleteCurrentBook {
+                        self.path.removeLast(self.path.count)
+                        self.path.append(AppScreen.home)
+                    }
+                case .failure(let error):
+                    print("❌ Failed to delete Audio book: \(error.localizedDescription)")
+                }
+            }
         }
     }
 }

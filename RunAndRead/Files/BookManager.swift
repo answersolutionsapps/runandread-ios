@@ -29,6 +29,23 @@ class BookManager: ObservableObject {
     
     @Published var plainTextPartData: [TextPart] = []
     @Published var audioPath: String? = nil
+    
+    func defineTextBookFields(bookFile: BookFile) {
+        audioPath = nil
+        plainTextPartData = []
+        plainTextData =  bookFile.content
+        plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
+        titleData = bookFile.title
+        authorData = bookFile.author
+    }
+    
+    func defineAudioBookFields(bookFile: BookFile) {
+        plainTextPartData =  bookFile.text
+        audioPath =  bookFile.audioPath
+        plainTextData = []
+        titleData = bookFile.title
+        authorData = bookFile.author
+    }
 
     public var openedFilePath: URL? = nil
 
@@ -54,8 +71,8 @@ class BookManager: ObservableObject {
                     let data = try JSONEncoder().encode(book.id)
                     try data.write(to: self.currentBookIdPath)
                     DispatchQueue.main.async {
-                        self.currentBookId = book.id
-                        self.currentBook = book
+                        self.currentBookId = b.id
+                        self.currentBook = b
                         onSave()
                         self.inProgress = false
                     }
@@ -63,8 +80,8 @@ class BookManager: ObservableObject {
                     let data = try JSONEncoder().encode(b.id)
                     try data.write(to: self.currentBookIdPath)
                     DispatchQueue.main.async {
-                        self.currentBookId = book.id
-                        self.currentBook = book
+                        self.currentBookId = b.id
+                        self.currentBook = b
                         onSave()
                         self.inProgress = false
                     }
@@ -103,6 +120,7 @@ class BookManager: ObservableObject {
             DispatchQueue.main.async {
                 self.currentBook = nil
                 self.currentBookId = nil
+                self.audioPath = nil
                 self.plainTextData = []
                 self.authorData = ""
                 self.titleData = ""
@@ -195,7 +213,36 @@ class BookManager: ObservableObject {
             }
         }
     }
-
+    
+    func deleteAudioBookFromLibrary(book: AudioBook, completion: @escaping (Result<Void, Error>) -> Void) {
+        inProgress = true
+        DispatchQueue.global(qos: .background).async {
+            let fileManager = FileManager.default
+            let bookFilePath = self.audioLibraryFolderPath.appendingPathComponent("\(book.id).json")
+            
+            do {
+                // Remove the JSON metadata file
+                if fileManager.fileExists(atPath: bookFilePath.path) {
+                    try fileManager.removeItem(at: bookFilePath)
+                }
+                
+                // Remove the audio file
+                if let audioFilePath = book.pathToAudio(), fileManager.fileExists(atPath: audioFilePath.path) {
+                    try fileManager.removeItem(at: audioFilePath)
+                }
+                
+                DispatchQueue.main.async {
+                    completion(.success(()))
+                    self.inProgress = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                    self.inProgress = false
+                }
+            }
+        }
+    }
 
     private func loadBookFromLibrary(id: String) -> AnyPublisher<(any RunAndReadBook)?, Never> {
         Future { promise in
@@ -389,6 +436,7 @@ class BookManager: ObservableObject {
                         if let testBookId = bookId {
                             self.loadBookFromLibrary(id: testBookId).sink { book in
                                         DispatchQueue.main.async {
+                                            self.audioPath = nil
                                             self.currentBookId = bookId
                                             self.currentBook = book
                                             onLoaded()
@@ -404,9 +452,6 @@ class BookManager: ObservableObject {
     }
 
     func loadText(from fileURL: URL, onLoaded: @escaping (BookFile?, String?) -> Void) {
-//        DispatchQueue.main.async {
-//            self.inProgress = true
-//        }
         DispatchQueue.global(qos: .background).async {
             FileTextExtractor.extractText(from: fileURL)
                     .receive(on: DispatchQueue.main)
@@ -414,12 +459,9 @@ class BookManager: ObservableObject {
                         if case .failure(let error) = completion {
                             print("Error extracting text: \(error)")
                             onLoaded(nil, "Error extracting text: \(error)") // Pass nil to signal failure
-//                            self.inProgress = false
                         }
                     }, receiveValue: { bookFile in
-//                        TimeLogger.log("onFileSelected", message: "FileTextExtractor.onLoaded")
                         onLoaded(bookFile, nil)
-//                        self.inProgress = false
                     })
                     .store(in: &self.cancellables)
         }
@@ -434,11 +476,9 @@ class BookManager: ObservableObject {
                     if case .failure(let error) = completion {
                         print("Error extracting text: \(error)")
                         onLoaded(nil, "Error extracting text: \(error)") // Pass nil to signal failure
-//                        self.inProgress = false
                     }
                 }, receiveValue: { bookFile in
                     onLoaded(bookFile, nil)
-//                    self.inProgress = false
                 })
                 .store(in: &self.cancellables)
         }

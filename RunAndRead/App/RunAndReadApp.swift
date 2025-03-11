@@ -33,6 +33,7 @@ struct RunAndReadApp: App {
                 .onOpenURL { url in
                     handleOpenFile(url)
                 }
+            
         }
     }
     

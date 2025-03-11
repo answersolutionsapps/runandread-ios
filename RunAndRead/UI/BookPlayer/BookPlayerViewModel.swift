@@ -236,5 +236,78 @@ class BookPlayerViewModel: ObservableObject {
             self.audioPlayer.playPause()
         }
     }
+    
+    private func onFileSelected(fileURL: URL) {
+        DispatchQueue.main.async {
+            self.bookManager.inProgress = true
+        }
+        bookManager.loadText(from: fileURL) { bookFile, error in
+            guard let bookFile = bookFile else {
+                DispatchQueue.main.async {
+//                    self.errorMessage = error
+//                    self.showErrorMessage = true
+                    self.bookManager.inProgress = false
+                }
+                return
+            }
+            
+            if bookFile.content.isEmpty {
+                self.bookManager.defineAudioBookFields(bookFile: bookFile)
+//                self.bookManager.plainTextPartData =  bookFile.text
+//                self.bookManager.audioPath =  bookFile.audioPath
+//                self.bookManager.plainTextData = []
+//                self.bookManager.titleData = bookFile.title
+//                self.bookManager.authorData = bookFile.author
+                    let book = AudioBook(
+                        title: bookFile.title,
+                        author: bookFile.author,
+                        language: Locale(identifier: bookFile.language),
+                        voiceRate: bookFile.rate,
+                        parts: bookFile.text,
+                        audioFilePath: bookFile.audioPath,
+                        voice: bookFile.voice,
+                        model: bookFile.model,
+                        book_source: bookFile.book_source
+                    )
+                    
+                    self.bookManager.saveAudioBookToLibrary(book: book) { result in
+                        switch result {
+                        case .success(let fileURL):
+                            print("Book saved successfully at: \(fileURL.path)")
+                            self.bookManager.saveCurrentBook(book: book) {
+                                DispatchQueue.main.async {
+                                    self.path.append(AppScreen.player)
+                                }
+                            }
+                        case .failure(let error):
+                            print("Failed to save book: \(error.localizedDescription)")
+                        }
+                    }
+            } else {
+                self.bookManager.defineTextBookFields(bookFile: bookFile)
+//                self.bookManager.audioPath = nil
+//                self.bookManager.plainTextPartData = []
+//                self.bookManager.plainTextData =  bookFile.content
+//                self.bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
+//                self.bookManager.titleData = bookFile.title
+//                self.bookManager.authorData = bookFile.author
+                
+                DispatchQueue.main.async {
+                    self.path.append(AppScreen.newBook)
+                    
+                    DispatchQueue.main.async {
+                        self.bookManager.inProgress = false
+                    }
+                    
+                }
+            }
+        }
+    }
+    
+    func onBackToForegraund() {
+        if let url = bookManager.openedFilePath {
+            onFileSelected(fileURL: url)
+        }
+    }
 }
 

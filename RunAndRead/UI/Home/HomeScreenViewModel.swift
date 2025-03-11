@@ -49,31 +49,31 @@ class HomeScreenViewModel: ObservableObject {
         }
     }
 
-    func handleFileSelection(fileURL: URL) {
-        DispatchQueue.main.async {
-            self.bookManager.inProgress = true
-        }
-        bookManager.loadText(from: fileURL) { bookFile, error in
-            guard let bookFile = bookFile else {
-                DispatchQueue.main.async {
-                    self.errorMessage = error
-                    self.showErrorMessage = true
-                    self.bookManager.inProgress = false
-                }
-                return
-            }
-            
-            self.bookManager.plainTextData = bookFile.content
-            self.bookManager.plainTextData.append(". This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
-            
-            self.bookManager.titleData = bookFile.title
-            self.bookManager.authorData = bookFile.author
-
-            DispatchQueue.main.async {
-                self.showFilePicker = false
-            }
-        }
-    }
+//    func handleFileSelection(fileURL: URL) {
+//        DispatchQueue.main.async {
+//            self.bookManager.inProgress = true
+//        }
+//        bookManager.loadText(from: fileURL) { bookFile, error in
+//            guard let bookFile = bookFile else {
+//                DispatchQueue.main.async {
+//                    self.errorMessage = error
+//                    self.showErrorMessage = true
+//                    self.bookManager.inProgress = false
+//                }
+//                return
+//            }
+//            
+//            self.bookManager.plainTextData = bookFile.content
+//            self.bookManager.plainTextData.append(". This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
+//            
+//            self.bookManager.titleData = bookFile.title
+//            self.bookManager.authorData = bookFile.author
+//
+//            DispatchQueue.main.async {
+//                self.showFilePicker = false
+//            }
+//        }
+//    }
 
     func handleClipboard() {
         if let text = UIPasteboard.general.string {
@@ -117,7 +117,6 @@ class HomeScreenViewModel: ObservableObject {
         DispatchQueue.main.async {
             self.bookManager.inProgress = true
         }
-//        TimeLogger.log("onFileSelected", message: "before.loadText")
         bookManager.loadText(from: fileURL) { bookFile, error in
             guard let bookFile = bookFile else {
                 DispatchQueue.main.async {
@@ -129,60 +128,102 @@ class HomeScreenViewModel: ObservableObject {
             }
             
             if bookFile.content.isEmpty {
-                self.bookManager.plainTextPartData =  bookFile.text
-                self.bookManager.audioPath =  bookFile.audioPath
-                self.bookManager.plainTextData = []
+//                self.bookManager.plainTextPartData =  bookFile.text
+//                self.bookManager.audioPath =  bookFile.audioPath
+//                self.bookManager.plainTextData = []
+//                self.bookManager.titleData = bookFile.title
+//                self.bookManager.authorData = bookFile.author
+                
+                self.bookManager.defineAudioBookFields(bookFile: bookFile)
+                
+                    let book = AudioBook(
+                        title: bookFile.title,
+                        author: bookFile.author,
+                        language: Locale(identifier: bookFile.language),
+                        voiceRate: bookFile.rate,
+                        parts: bookFile.text,
+                        audioFilePath: bookFile.audioPath,
+                        voice: bookFile.voice,
+                        model: bookFile.model,
+                        book_source: bookFile.book_source
+                    )
+                    
+                    self.bookManager.saveAudioBookToLibrary(book: book) { result in
+                        switch result {
+                        case .success(let fileURL):
+                            print("Book saved successfully at: \(fileURL.path)")
+                            self.bookManager.saveCurrentBook(book: book) {
+                                DispatchQueue.main.async {
+                                    self.path.append(AppScreen.player)
+                                }
+                            }
+                        case .failure(let error):
+                            print("Failed to save book: \(error.localizedDescription)")
+                        }
+                    }
             } else {
-                self.bookManager.audioPath = ""
-                self.bookManager.plainTextPartData = []
-                self.bookManager.plainTextData =  bookFile.content
-                self.bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
-            }
-            
-            self.bookManager.titleData = bookFile.title
-            self.bookManager.authorData = bookFile.author
-
-            DispatchQueue.main.async {
-                print("loadText.title => \(bookFile.title)")
-                print("loadText.author => \(bookFile.author)")
-//                TimeLogger.log("onFileSelected", message: "loadText.title")
-                self.path.append(AppScreen.newBook)
+                self.bookManager.defineTextBookFields(bookFile: bookFile)
+                
+//                self.bookManager.audioPath = nil
+//                self.bookManager.plainTextPartData = []
+//                self.bookManager.plainTextData =  bookFile.content
+//                self.bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
+//                self.bookManager.titleData = bookFile.title
+//                self.bookManager.authorData = bookFile.author
                 
                 DispatchQueue.main.async {
-                    self.bookManager.inProgress = false
-//                    TimeLogger.log("onFileSelected", message: "loadText.inProgress")
+                    self.path.append(AppScreen.newBook)
+                    
+                    DispatchQueue.main.async {
+                        self.bookManager.inProgress = false
+                    }
+                    
                 }
-                
             }
         }
     }
     
     func onBackToForegraund() {
         if let url = bookManager.openedFilePath {
-            bookManager.loadText(from: url) { bookFile, error in
-                self.bookManager.openedFilePath?.stopAccessingSecurityScopedResource()
-                self.bookManager.openedFilePath = nil
-                guard let bookFile = bookFile else {
-                    DispatchQueue.main.async {
-                        self.errorMessage = error
-                        self.showErrorMessage = true
-                        self.bookManager.inProgress = false
-                    }
-                    return
-                }
-                
-                self.bookManager.plainTextData =  bookFile.content
-                self.bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
-                self.bookManager.titleData = bookFile.title
-                self.bookManager.authorData = bookFile.author
-
-                DispatchQueue.main.async {
-                    print("loadText.title => \(bookFile.title)")
-                    print("loadText.author => \(bookFile.author)")
-                    self.path.append(AppScreen.newBook)
-                    self.bookManager.inProgress = false
-                }
-            }
+            onFileSelected(fileURL: url)
+            
+//            if url.absoluteString.hasSuffix(".randr") {
+//                //TODO: Open Audiobook
+//                
+//            } else {
+//                bookManager.loadText(from: url) { bookFile, error in
+//                    self.bookManager.openedFilePath?.stopAccessingSecurityScopedResource()
+//                    self.bookManager.openedFilePath = nil
+//                    guard let bookFile = bookFile else {
+//                        DispatchQueue.main.async {
+//                            self.errorMessage = error
+//                            self.showErrorMessage = true
+//                            self.bookManager.inProgress = false
+//                        }
+//                        return
+//                    }
+//                    
+//                    if bookFile.content.isEmpty {
+//                        self.bookManager.plainTextPartData =  bookFile.text
+//                        self.bookManager.audioPath =  bookFile.audioPath
+//                        self.bookManager.plainTextData = []
+//                    } else {
+//                        self.bookManager.audioPath = ""
+//                        self.bookManager.plainTextPartData = []
+//                        self.bookManager.plainTextData =  bookFile.content
+//                        self.bookManager.plainTextData.append("This text has been narrated by the Run and Read app! We hope you enjoyed listening!")
+//                    }
+//                    self.bookManager.titleData = bookFile.title
+//                    self.bookManager.authorData = bookFile.author
+//
+//                    DispatchQueue.main.async {
+//                        print("loadText.title => \(bookFile.title)")
+//                        print("loadText.author => \(bookFile.author)")
+//                        self.path.append(AppScreen.newBook)
+//                        self.bookManager.inProgress = false
+//                    }
+//                }
+//            }
         }
     }
     

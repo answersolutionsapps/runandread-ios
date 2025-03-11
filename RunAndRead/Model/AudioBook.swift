@@ -84,6 +84,10 @@ class AudioBook: RunAndReadBook {
     
     var parts: [TextPart]
     var audioFilePath: String
+    
+    var voice: String
+    var model: String
+    var book_source: String
 
     init(
         id: String = UUID().uuidString,
@@ -95,7 +99,10 @@ class AudioBook: RunAndReadBook {
         created: Date = Date(),
         bookmarks: [Bookmark] = [],
         parts: [TextPart],
-        audioFilePath: String
+        audioFilePath: String,
+        voice: String,
+        model: String,
+        book_source: String
     ) {
         self.id = id
         self.title = title
@@ -107,6 +114,9 @@ class AudioBook: RunAndReadBook {
         self.bookmarks = bookmarks
         self.parts = parts
         self.audioFilePath = audioFilePath
+        self.voice = voice
+        self.model = model
+        self.book_source = book_source
     }
     
     func playerType() -> BookPlayerType {
@@ -115,7 +125,7 @@ class AudioBook: RunAndReadBook {
 
     // MARK: - Codable
     private enum CodingKeys: String, CodingKey {
-        case id, title, author, language, voiceRate, lastPosition, created, bookmarks, parts, audioFilePath
+        case id, title, author, language, voiceRate, lastPosition, created, bookmarks, parts, audioFilePath, voice, model, book_source
     }
 
     required init(from decoder: Decoder) throws {
@@ -131,6 +141,10 @@ class AudioBook: RunAndReadBook {
         bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
         parts = try container.decode([TextPart].self, forKey: .parts)
         audioFilePath = try container.decode(String.self, forKey: .audioFilePath)
+        
+        voice = try container.decode(String.self, forKey: .voice)
+        model = try container.decode(String.self, forKey: .model)
+        book_source = try container.decode(String.self, forKey: .book_source)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -145,6 +159,10 @@ class AudioBook: RunAndReadBook {
         try container.encode(bookmarks, forKey: .bookmarks)
         try container.encode(parts, forKey: .parts)
         try container.encode(audioFilePath, forKey: .audioFilePath)
+        
+        try container.encode(voice, forKey: .voice)
+        try container.encode(model, forKey: .model)
+        try container.encode(book_source, forKey: .book_source)
     }
 
     static func == (lhs: AudioBook, rhs: AudioBook) -> Bool {

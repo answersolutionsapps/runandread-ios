@@ -68,6 +68,11 @@ struct BookSettingsView: View {
                                         .stroke(Color.gray, lineWidth: 1)
                                 )
                         }
+                    } else {
+                        Divider()
+                        Text("Language")
+                            .font(.headline)
+                        Text(viewModel.audioBookLanguage())
                     }
                     Divider()
                     HStack {
@@ -86,7 +91,6 @@ struct BookSettingsView: View {
                             print("Selected speed: \(newSpeed)")
                             
                             viewModel.onRateChanges(value: newSpeed)
-//                            viewModel.defaultVoiceRate = newSpeed.speedToPlaybackRate()
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -105,6 +109,11 @@ struct BookSettingsView: View {
                         .sheet(isPresented: $viewModel.showVoicePicker) {
                             VoicePicker(viewModel: viewModel)
                         }
+                    } else {
+                        Text("Voice Name:\n\(viewModel.audioBookVoice())")
+                            .font(.headline)
+                        Text("Model Name:\n\(viewModel.audioBookModel())")
+                            .font(.headline)
                     }
                     Divider()
                     if (!viewModel.isAudioBook()) {
@@ -136,6 +145,8 @@ struct BookSettingsView: View {
                         }
                     }
                     } else {
+                        Text("Book source:\n\(viewModel.audioBookSource())")
+                            .font(.headline)
                         Spacer()
                             .frame(height: 400)
                     }

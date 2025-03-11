@@ -53,12 +53,12 @@ extension AudioBookPlayer {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
 
-    func updateProgressNowPlayingInfo() {
+    func updateProgressNowPlayingInfo(progressValue: TimeInterval) {
         guard var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo else {
             return
         }
 
-        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsedSeconds
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = progressValue
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
@@ -140,9 +140,9 @@ class AudioBookPlayer: NSObject, AVAudioPlayerDelegate, ObservableObject, Sendab
                 audioPlayer?.delegate = self
                 audioPlayer?.enableRate = true
                 audioPlayer?.prepareToPlay()
-                nprint("audioPlayer?.rate=>\(audioPlayer?.rate)")
+//                nprint("audioPlayer?.rate=>\(audioPlayer?.rate)")
                 audioPlayer?.rate = Float(speed)
-                nprint("speed=>\(speed)")
+//                nprint("speed=>\(speed)")
                 
             } catch {
                 print("Error playing file \(file.lastPathComponent): \(error.localizedDescription)")
@@ -362,7 +362,7 @@ class AudioBookPlayer: NSObject, AVAudioPlayerDelegate, ObservableObject, Sendab
             wordIndex
         )
 
-        self.updateProgressNowPlayingInfo()
+        self.updateProgressNowPlayingInfo(progressValue: elapsedSecondsLocal)
     }
 
 

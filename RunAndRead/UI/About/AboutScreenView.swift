@@ -62,6 +62,16 @@ Run & Read is committed to respecting intellectual property rights. Please use t
                         }
                     }
                     
+                    // Website Link
+                    VStack(alignment: .leading) {
+                        Text("Open-source tooling to create audiobooks in the Run & Read format:")
+                        Link(destination: URL(string: "https://github.com/sergenes/runandread-audiobook")!) {
+                            Text("runandread-audiobook on GitHub")
+                                .underline()
+                                .foregroundColor(.blue)
+                        }
+                    }
+                    
                     // App Version
                     Text("App Version: \(Bundle.main.fullVersion)")
                         .font(.footnote)
