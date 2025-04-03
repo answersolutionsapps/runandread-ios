@@ -109,11 +109,13 @@ class BookPlayerViewModel: ObservableObject {
     }
 
     @MainActor func stopPlayer() {
-        if self.bookManager.currentBook is Book {
-            self.player.stop()
-        } else {
-            self.audioPlayer.stop()
-        }
+//        if let path = self.bookManager.audioPath {
+//            self.audioPlayer.stop()
+//        } else {
+//            self.player.stop()
+//        }
+        self.player.stop()
+        self.audioPlayer.stop()
         
         self.bookManager.persist { _ in
 

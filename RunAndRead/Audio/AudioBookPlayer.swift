@@ -62,6 +62,18 @@ extension AudioBookPlayer {
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
+    
+    func tearDownRemoteTransportControls() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.skipForwardCommand.removeTarget(nil)
+        commandCenter.skipBackwardCommand.removeTarget(nil)
+        commandCenter.bookmarkCommand.removeTarget(nil)
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
 }
 
 
@@ -112,7 +124,6 @@ class AudioBookPlayer: NSObject, AVAudioPlayerDelegate, ObservableObject, Sendab
                 return albumCoverImage
             }
         }
-        setupRemoteTransportControls()
     }
 
     func setup(
@@ -168,6 +179,8 @@ class AudioBookPlayer: NSObject, AVAudioPlayerDelegate, ObservableObject, Sendab
             }
             state = .idle
         }
+        tearDownRemoteTransportControls()
+        setupRemoteTransportControls()
     }
     
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
@@ -203,6 +216,7 @@ class AudioBookPlayer: NSObject, AVAudioPlayerDelegate, ObservableObject, Sendab
         progressCallback = nil
         onAddBookmarkCallback = nil
         stopProgressTimer()
+        tearDownRemoteTransportControls()
     }
 
     func endTheBook() {

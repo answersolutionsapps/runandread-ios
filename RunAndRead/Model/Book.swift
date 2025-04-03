@@ -35,6 +35,7 @@ enum BookPlayerType: String, Codable {
 
 struct TextPart: Codable {
     let start_time_ms: Int
+    let end_time_ms: Int?
     let text: String
 }
 

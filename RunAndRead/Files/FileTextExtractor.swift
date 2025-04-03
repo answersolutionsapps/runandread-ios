@@ -12,6 +12,18 @@ import SwiftSoup
 import PDFKit
 import ZIPFoundation
 
+struct AudioBookFileJson: Codable {
+    let title: String
+    let author: String
+    let text: [TextPart]
+    
+    let language: String
+    let rate: Float
+    let voice: String
+    let model: String
+    let book_source: String
+}
+
 
 struct BookFile: Codable {
     let title: String
@@ -124,33 +136,44 @@ class FileTextExtractor {
         }
 
         let jsonData = try Data(contentsOf: bookJSONURL)
-        let decoder = JSONDecoder()
-        
-        let parsedBook: [String: Any]
+        var book: AudioBookFileJson? = nil
         do {
-            parsedBook = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] ?? [:]
+            book = try JSONDecoder().decode(AudioBookFileJson.self, from: jsonData)
+
+            // Use book.title, book.text, etc.
         } catch {
             try? fileManager.removeItem(at: extractionDirectory)
+            print(error)
             throw ExtractionError.invalidJSON
         }
+//        let decoder = JSONDecoder()
+//        
+//        let parsedBook: [String: Any]
+//        do {
+//            parsedBook = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] ?? [:]
+//        } catch {
+//            try? fileManager.removeItem(at: extractionDirectory)
+//            throw ExtractionError.invalidJSON
+//        }
 
-        guard let title = parsedBook["title"] as? String,
-              let author = parsedBook["author"] as? String,
-              let language = parsedBook["language"] as? String,
-              let rate = parsedBook["rate"] as? Float,
-              let voice = parsedBook["voice"] as? String,
-              let model = parsedBook["model"] as? String,
-              let book_source = parsedBook["book_source"] as? String,
-              let textPartsArray = parsedBook["text"] as? [[String: Any]] else {
-            try? fileManager.removeItem(at: extractionDirectory)
-            throw ExtractionError.invalidJSON
-        }
-
-        let textParts: [TextPart] = textPartsArray.compactMap { dict in
-            guard let start_time_ms = dict["start_time_ms"] as? Int,
-                  let text = dict["text"] as? String else { return nil }
-            return TextPart(start_time_ms: start_time_ms, text: text)
-        }
+//        guard let title = parsedBook["title"] as? String,
+//              let author = parsedBook["author"] as? String,
+//              let language = parsedBook["language"] as? String,
+//              let rate = parsedBook["rate"] as? Float,
+//              let voice = parsedBook["voice"] as? String,
+//              let model = parsedBook["model"] as? String,
+//              let book_source = parsedBook["book_source"] as? String,
+//              guard let textPartsArray = parsedBook["text"] as? [[String: Any]] else {
+//            try? fileManager.removeItem(at: extractionDirectory)
+//            throw ExtractionError.invalidJSON
+//        }
+//        let textParts: [TextPart] = textPartsArray.compactMap { dict in
+//            guard let start_time_ms = dict["start_time_ms"] as? Int,
+//                  let text = dict["text"] as? String else {
+//                return nil
+//            }
+//            return TextPart(start_time_ms: start_time_ms, text: text)
+//        }
 
         let audioDestination = rootDirectory.appendingPathComponent("audio/\(fileNameWithoutExtension)/")
         let finalAudioPath = audioDestination.appendingPathComponent("audio.mp3")
@@ -174,16 +197,16 @@ class FileTextExtractor {
         }
 
         return BookFile(
-            title: title,
-            author: author,
+            title: book!.title,
+            author: book!.author,
             content: [],
             audioPath: "audio/\(fileNameWithoutExtension)/audio.mp3",
-            text: textParts,
-            language: language,
-            rate: rate,
-            voice: voice,
-            model: model,
-            book_source: book_source
+            text: book!.text,
+            language: book!.language,
+            rate: book!.rate,
+            voice: book!.voice,
+            model: book!.model,
+            book_source: book!.book_source
         )
     }
 

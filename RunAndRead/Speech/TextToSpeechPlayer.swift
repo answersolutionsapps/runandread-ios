@@ -61,6 +61,18 @@ extension TextToSpeechPlayer {
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
+    
+    func tearDownRemoteTransportControls() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        commandCenter.playCommand.removeTarget(nil)
+        commandCenter.pauseCommand.removeTarget(nil)
+        commandCenter.skipForwardCommand.removeTarget(nil)
+        commandCenter.skipBackwardCommand.removeTarget(nil)
+        commandCenter.bookmarkCommand.removeTarget(nil)
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+    }
 }
 
 extension TextToSpeechPlayer {
@@ -102,7 +114,6 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
                 return albumCoverImage
             }
         }
-        setupRemoteTransportControls()
     }
 
     func setup(
@@ -112,8 +123,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
             onAddBookmarkCallback: (() -> Void)?
     ) {
         if let book = currentBook {
-
-            words.removeAll()
+            stop()
             words = book.text.flatMap {
                         $0.components(separatedBy: .whitespacesAndNewlines)
                     }
@@ -155,6 +165,8 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
             nprint("setup.error currentBook is not defined.")
             onSetUp(false, indexToElapsedSeconds().formatSecondsToHMS(), currentWordIndex, currentFrame, currentWordIndexInFrame)
         }
+        tearDownRemoteTransportControls()
+        setupRemoteTransportControls()
     }
 
     func isNotUndefined() -> Bool {
@@ -170,6 +182,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
         synthesizer.delegate = nil
         progressCallback = nil
         onAddBookmarkCallback = nil
+        tearDownRemoteTransportControls()
     }
 
     func endTheBook() {
