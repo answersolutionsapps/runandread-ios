@@ -7,12 +7,11 @@
 
 import SwiftUI
 import StoreKit
-
+import UIKit
 
 func askForAppRating() {
     if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
         SKStoreReviewController.requestReview(in: windowScene)
-            
     }
 }
 
@@ -22,6 +21,7 @@ struct RunAndReadApp: App {
     private let simplePlayer = SimpleTTSPlayer()
     private let textToSpeechPlayer = TextToSpeechPlayer()
     private let audioBookPlayer = AudioBookPlayer()
+
     var body: some Scene {
         WindowGroup {
             SplashScreenView()
@@ -30,25 +30,22 @@ struct RunAndReadApp: App {
                 .environmentObject(simplePlayer)
                 .environmentObject(textToSpeechPlayer)
                 .environmentObject(audioBookPlayer)
-                .onOpenURL { url in
-                    handleOpenFile(url)
-                }
-            
+                .onOpenURL(perform: handleOpenFile(_:))
         }
     }
-    
+
     private func handleOpenFile(_ url: URL) {
         print("App opened with file: \(url)")
         let needTo = url.startAccessingSecurityScopedResource()
-        
+
+        let resolvedURL = NSURLComponents(url: url, resolvingAgainstBaseURL: true)?.url
         if needTo {
-            // open file in Files
-            if let resolvedURL = NSURLComponents(url: url, resolvingAgainstBaseURL: true)?.url {
+            // Accessing security-scoped resource succeeded
+            if let resolvedURL {
                 bookManager.openedFilePath = resolvedURL
             }
-            
         } else {
-            if let resolvedURL = NSURLComponents(url: url, resolvingAgainstBaseURL: true)?.url {
+            if let resolvedURL {
                 bookManager.openedFilePath = resolvedURL
             }
         }
