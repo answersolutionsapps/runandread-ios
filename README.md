@@ -7,7 +7,7 @@
 
 Ultimate Text-to-Speech Player for iPhone/iPad/Mac/Vision OS - Listen to your books while running, exercising, or on the go!
 
-<img src="app/src/main/ic_launcher-playstore.png" width="100" height="100" alt="RunAndRead Logo">
+<img src="assets/ic_launcher.png" width="100" height="100" alt="RunAndRead Logo">
 
 
 RunAndRead is a distraction‑free Text‑to‑Speech (TTS) and audiobook player designed for reading while moving (running/walking). Open text, PDF, or EPUB files and let the app read them aloud using system voices, with speed control and background audio.
