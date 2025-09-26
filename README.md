@@ -1,4 +1,4 @@
-# RunAndRead iOS | [[RunAndRead-Android]](https://github.com/answersolutionsapps/runandread-android) | [Audiobook-Pipeline](https://github.com/sergenes/runandread-audiobook)
+# RunAndRead iOS | [[RunAndRead-Android]](https://github.com/answersolutionsapps/runandread-android) | [[Audiobook-Pipeline]](https://github.com/sergenes/runandread-audiobook)
 
 [![Platform iOS](https://img.shields.io/badge/platform-iOS-lightgrey.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.9+-F05138.svg)](https://swift.org)
