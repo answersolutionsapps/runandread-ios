@@ -44,13 +44,13 @@ See docs/ARCHITECTURE.md for a high‑level overview of the app layers and data 
   - iOS 16+ deployment target (configurable)
   - Swift 5.9+
 - Steps:
-  1. Clone the repository:
-   ```
-   git clone https://github.com/answersolutions/runandread-ios.git
-   ```
+1. Clone the repository:
+    ```
+    git clone https://github.com/answersolutions/runandread-ios.git
+    ```
 
-  2. Open RunAndRead.xcodeproj in Xcode.
-  3.  Select the RunAndRead scheme and build/run on a device or simulator.
+2. Open RunAndRead.xcodeproj in Xcode.
+3.  Select the RunAndRead scheme and build/run on a device or simulator.
 
 
 ## Features
@@ -61,6 +61,9 @@ See docs/ARCHITECTURE.md for a high‑level overview of the app layers and data 
 - Opens files from Files app or share sheet
 - Background audio support
 
+## 📦 Dependencies
+[RunAndRead-Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project aimed at generating high-quality text-to-speech (TTS) generated audiobooks using models like **Zyphra/Zonos**.
+Run & Read supports MP3 audiobooks generated using the RANDR pipeline in this repository. [See instructions here](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
 
 ## Contributing
 Contributions are welcome! Please open an issue to discuss changes or submit a pull request. See coding guidelines in docs/ARCHITECTURE.md.
