@@ -5,36 +5,34 @@
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-supported-blue.svg)](https://developer.apple.com/xcode/swiftui/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Ultimate Text-to-Speech Player for iPhone/iPad/Mac/Vision OS - Listen to your books while running, exercising, or on the go!
+Ultimate Text‑to‑Speech player for iPhone, iPad, Mac, and visionOS — listen to your books while running, exercising, or on the go.
 
-<img src="assets/ic_launcher.png" width="100" height="100" alt="RunAndRead Logo">
+<img src="assets/ic_launcher.png" width="100" height="100" alt="Run & Read app icon">
 
-
-RunAndRead is a distraction‑free Text‑to‑Speech (TTS) and audiobook player designed for reading while moving (running/walking). Open text, PDF, or EPUB files and let the app read them aloud using system voices, with speed control and background audio.
+Run & Read is a distraction‑free Text‑to‑Speech (TTS) and audiobook player designed for reading while moving. Open text, PDF, or EPUB files and let the app read them aloud using system voices, with speed control and background audio.
 
 - Clean SwiftUI interface
 - System Text‑to‑Speech with voice and speed selection
-- Background audio playback (run while your screen is off)
-- Support for .txt, .pdf, .epub and a custom `.randr` archive
-- Share/open from the Files app and other apps
-
+- Background audio playback (keep listening with the screen off)
+- Supports .txt, .pdf, .epub, and a custom `.randr` archive
+- Open from the Files app and other apps via the share sheet
 
 ## Architecture
-See docs/ARCHITECTURE.md for a high‑level overview of the app layers and data flow.
-
+See the high‑level overview in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Installation
 
-### From App Store
+### From the App Store
 🍏 **App Store**: [Ran & Read for Apple Devices](https://apps.apple.com/us/app/run-read-listen-on-the-go/id6741396289)
+
 ### From Google Play
 🤖 **Google Play**: [Ran & Read for Android](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
 
-
-📱 **Scan QR Codes to Download:**
+📱 **Scan QR codes to download**
 
 <div align="center">
-<img src="assets/apple_runandread_qr_code.png" width="150px"> &nbsp;&nbsp;&nbsp; <img src="assets/google_runandread_qr_code.png" width="150px">
+  <img src="assets/apple_runandread_qr_code.png" width="150" alt="App Store QR code">&nbsp;&nbsp;&nbsp;
+  <img src="assets/google_runandread_qr_code.png" width="150" alt="Google Play QR code">
 </div>
 
 ### Build from source
@@ -44,34 +42,30 @@ See docs/ARCHITECTURE.md for a high‑level overview of the app layers and data 
   - iOS 16+ deployment target (configurable)
   - Swift 5.9+
 - Steps:
-1. Clone the repository:
-    ```
-    git clone https://github.com/answersolutions/runandread-ios.git
-    ```
-
-2. Open RunAndRead.xcodeproj in Xcode.
-3.  Select the RunAndRead scheme and build/run on a device or simulator.
-
+  1. Clone the repository:
+     ```
+     git clone https://github.com/answersolutions/runandread-ios.git
+     ```
+  2. Open RunAndRead.xcodeproj in Xcode.
+  3. Select the RunAndRead scheme and build/run on a device or simulator.
 
 ## Features
 - Text‑to‑Speech player using system voices (AVSpeechSynthesizer)
 - Audiobook playback
 - Adjustable speed and voice selection
 - Horizontally scrolled text reader
-- Opens files from Files app or share sheet
+- Open files from the Files app or share sheet
 - Background audio support
 
 ## 📦 Dependencies
-[RunAndRead-Audiobook](https://github.com/sergenes/runandread-audiobook) is an open-source project aimed at generating high-quality text-to-speech (TTS) generated audiobooks using models like **Zyphra/Zonos**.
-Run & Read supports MP3 audiobooks generated using the RANDR pipeline in this repository. [See instructions here](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
+[RunAndRead-Audiobook](https://github.com/sergenes/runandread-audiobook) is an open‑source project aimed at generating high‑quality TTS audiobooks using models like Zyphra/Zonos.
+Run & Read supports MP3 audiobooks generated using the RANDR pipeline in this repository. See the [RANDR instructions](https://github.com/sergenes/runandread-audiobook/blob/main/RANDR.md).
 
 ## Contributing
-Contributions are welcome! Please open an issue to discuss changes or submit a pull request. See coding guidelines in docs/ARCHITECTURE.md.
+Contributions are welcome! Please open an issue to discuss changes or submit a pull request. See coding guidelines in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## 📞 Contact
-
 - **[Sergey N](https://www.linkedin.com/in/sergey-neskoromny/)**
 
-
 ## License
-This project is licensed under the MIT License — see the LICENSE file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
