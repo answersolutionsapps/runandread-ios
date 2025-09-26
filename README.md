@@ -5,6 +5,11 @@
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-supported-blue.svg)](https://developer.apple.com/xcode/swiftui/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+Ultimate Text-to-Speech Player for iPhone/iPad/Mac/Vision OS - Listen to your books while running, exercising, or on the go!
+
+<img src="app/src/main/ic_launcher-playstore.png" width="100" height="100" alt="RunAndRead Logo">
+
+
 RunAndRead is a distraction‑free Text‑to‑Speech (TTS) and audiobook player designed for reading while moving (running/walking). Open text, PDF, or EPUB files and let the app read them aloud using system voices, with speed control and background audio.
 
 - Clean SwiftUI interface
@@ -20,19 +25,32 @@ See docs/ARCHITECTURE.md for a high‑level overview of the app layers and data 
 
 ## Installation
 
-Option A — Stores
-- App Store: https://apps.apple.com/app/idXXXXXXXXX
-- Google Play: https://play.google.com/store/apps/details?id=com.example.runandread
+### From App Store
+🍏 **App Store**: [Ran & Read for Apple Devices](https://apps.apple.com/us/app/run-read-listen-on-the-go/id6741396289)
+### From Google Play
+🤖 **Google Play**: [Ran & Read for Android](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
 
-Option B — Build from source
+
+📱 **Scan QR Codes to Download:**
+
+<div align="center">
+<img src="assets/apple_runandread_qr_code.png" width="150px"> &nbsp;&nbsp;&nbsp; <img src="assets/google_runandread_qr_code.png" width="150px">
+</div>
+
+### Build from source
+
 - Requirements:
   - Xcode 15+
   - iOS 16+ deployment target (configurable)
   - Swift 5.9+
 - Steps:
-  1. Clone this repository.
+  1. Clone the repository:
+   ```
+   git clone https://github.com/answersolutions/runandread-ios.git
+   ```
+
   2. Open RunAndRead.xcodeproj in Xcode.
-  3. Select the RunAndRead scheme and build/run on a device or simulator.
+  3.  Select the RunAndRead scheme and build/run on a device or simulator.
 
 
 ## Features
@@ -47,10 +65,9 @@ Option B — Build from source
 ## Contributing
 Contributions are welcome! Please open an issue to discuss changes or submit a pull request. See coding guidelines in docs/ARCHITECTURE.md.
 
+## 📞 Contact
 
-## Privacy & Security
-- No API keys or third‑party analytics are included.
-- The app processes documents locally on device.
+- **[Sergey N](https://www.linkedin.com/in/sergey-neskoromny/)**
 
 
 ## License
