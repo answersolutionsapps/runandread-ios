@@ -10,6 +10,21 @@ enum PlayerState: String, CaseIterable {
     case pause = "Pause"
 }
 
+extension String {
+    func cleanedForTTS() -> String {
+        let allowedCharacterSet = CharacterSet
+            .letters
+            .union(.decimalDigits)
+            .union(.whitespacesAndNewlines)
+            .union(CharacterSet(charactersIn: ".,?!'\"-"))
+
+        return self.unicodeScalars
+            .filter { allowedCharacterSet.contains($0) }
+            .map { String($0) }
+            .joined()
+    }
+}
+
 extension TextToSpeechPlayer {
 
     func setupRemoteTransportControls() {
@@ -78,7 +93,7 @@ extension TextToSpeechPlayer {
 extension TextToSpeechPlayer {
     static let SkipCountSeconds: Int = 30
     static let SkipCountWords: Int = 60
-    static let WordFrameSize: Int = 30
+    static let WordFrameSize: Int = 100
     static let BookmarkTextLength: Int = 30
     static let BookmarkOffcet: Int = 5
 }
@@ -125,7 +140,7 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
         if let book = currentBook {
             stop()
             words = book.text.flatMap {
-                        $0.components(separatedBy: .whitespacesAndNewlines)
+                        $0.cleanedForTTS().components(separatedBy: .whitespacesAndNewlines)
                     }
                     .filter {
                         !$0.isEmpty
@@ -252,7 +267,8 @@ class TextToSpeechPlayer: NSObject, ObservableObject, Sendable {
         currentWordIndexInFrame = 0
         let textToSpeak = currentFrame.joined(separator: " ")
 
-//        nprint("textToSpeak => \(textToSpeak)")
+//        nprint("wordIndex => \(wordIndex)")
+//        nprint("textToSpeak1 => \(textToSpeak)")
         let utterance = AVSpeechUtterance(string: textToSpeak)
         utterance.rate = speed.speedToPlaybackRate()
         utterance.volume = 1.0

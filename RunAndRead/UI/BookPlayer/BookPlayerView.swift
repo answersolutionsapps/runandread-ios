@@ -72,7 +72,7 @@ struct BookPlayerView: View {
                         Button(action: {
                             viewModel.onEditAction()
                         }, label: {
-                            Text("Edit").font(UIConfig.buttonFont)
+                            Text("Settings").font(UIConfig.buttonFont)
                         })
                 )
                 .navigationBarHidden(false)
