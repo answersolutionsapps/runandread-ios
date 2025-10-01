@@ -146,9 +146,12 @@ class Book: RunAndReadBook {
     func calculate(completed: @escaping ()->Void) {
         self.isCalculating = true
         DispatchQueue.global(qos: .background).async {
-            let words: [String] = self.text
-                    .flatMap { $0.components(separatedBy: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
+            let words: [String] = self.text.flatMap {
+                $0.cleanedForTTS().components(separatedBy: .whitespacesAndNewlines)
+            }
+            .filter {
+                !$0.isEmpty
+            }
             
             let totalSeconds = (Double(words.joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.voiceRate)
             let elapsedSeconds = (Double(words.prefix(self.lastPosition).joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / Double(self.voiceRate)
@@ -157,7 +160,7 @@ class Book: RunAndReadBook {
             DispatchQueue.main.async {
                 self.progressTime = elapsedSeconds.formatSecondsToHMS()
                 self.totalTime = totalSeconds.formatSecondsToHMS()
-                self.isCompleted = self.lastPosition + 1 >= words.count
+                self.isCompleted = self.lastPosition + 25 >= words.count
                 self.isCalculating = false
                 completed()
             }

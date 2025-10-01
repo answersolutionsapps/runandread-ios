@@ -22,7 +22,7 @@ struct BookPlayerView: View {
                                 locale: book.language)
                                 .frame(maxWidth: .infinity, maxHeight: 60)
                         Divider()
-                        PlaybackContrallsView(book: book)
+                        PlaybackControllsView(book: book)
                     } else if viewModel.isInitializing() {
                         Spacer()
                         Text("Loading...")
@@ -92,7 +92,7 @@ struct BookPlayerView: View {
         }
     }
 
-    private func PlaybackContrallsView(book: any RunAndReadBook) -> some View {
+    private func PlaybackControllsView(book: any RunAndReadBook) -> some View {
         return VStack {
             HStack(spacing: 40) {
                 Button(action: { viewModel.onRewind() }) {
