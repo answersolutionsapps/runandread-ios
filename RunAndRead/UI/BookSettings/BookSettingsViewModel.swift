@@ -85,16 +85,24 @@ class BookSettingsViewModel: ObservableObject {
         }
         
         var availableVoices: [AVSpeechSynthesisVoice] {
-            return AVSpeechSynthesisVoice.speechVoices().filter {
+            let all = AVSpeechSynthesisVoice.speechVoices().filter {
                 if let voice_lang = $0.language.split(separator: "-").first {
-                    if selectedLanguage.identifier.hasPrefix(voice_lang) {
-                        return true
-                    } else {
-                        return false
-                    }
-                } else {
-                    return false
+                    return selectedLanguage.identifier.hasPrefix(voice_lang)
                 }
+                return false
+            }
+            
+            return all.sorted { v1, v2 in
+                func rank(_ voice: AVSpeechSynthesisVoice) -> Int {
+                    if voice.quality == .premium {
+                        return 1
+                    } else if voice.quality == .enhanced {
+                        return 2
+                    } else {
+                        return 3
+                    }
+                }
+                return rank(v1) < rank(v2)
             }
         }
         if availableVoices.isEmpty == false, let firstVoice = availableVoices.first {

@@ -14,12 +14,12 @@ struct VoicePicker: View {
     @State var oldVoice: AVSpeechSynthesisVoice? = nil
 
     var availableVoices: [AVSpeechSynthesisVoice] {
-        print("selectedLanguage=\(viewModel.selectedLanguage.identifier)")
+        //print("selectedLanguage=\(viewModel.selectedLanguage.identifier)")
         return AVSpeechSynthesisVoice.speechVoices().filter {
-            print("voice:\($0.name) voice_lang=\($0.identifier); lang=\($0.language)")
+            //print("voice:\($0.name) voice_lang=\($0.identifier); lang=\($0.language)")
             if let voice_lang = $0.language.split(separator: "-").first {
                 if viewModel.selectedLanguage.identifier.hasPrefix(voice_lang) {
-                    print("voice:\($0.name) voice_prefix=\(voice_lang); lang=\($0.language)")
+                    print("voice:\($0.name) voice_prefix=\(voice_lang); lang=\($0.language); quality=\($0.quality)")
                     return true
                 } else {
                     return false
@@ -28,8 +28,16 @@ struct VoicePicker: View {
                 return false
             }
         }.sorted { v1, v2 in
-            //sort, to see the english close to the top
-            v1.name < v2.name
+            func rank(_ voice: AVSpeechSynthesisVoice) -> Int {
+                if voice.quality == .premium {
+                    return 1
+                } else if voice.quality == .enhanced {
+                    return 2
+                } else {
+                    return 3
+                }
+            }
+            return rank(v1) < rank(v2)
         }
     }
     
