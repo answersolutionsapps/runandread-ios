@@ -188,8 +188,7 @@ struct BookPlayerView: View {
        
         BookPlayerView(viewModel: BookPlayerViewModel(
                 path: path.projectedValue,
-                bookManager: returnBookManagerForPreview(),
-                player: TextToSpeechPlayer(), audioPlayer: AudioBookPlayer()))
+                bookManager: returnBookManagerForPreview()))
     }
             .environmentObject(returnBookManagerForPreview())
 

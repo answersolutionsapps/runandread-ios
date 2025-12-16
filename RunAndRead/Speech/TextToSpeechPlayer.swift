@@ -1,3 +1,10 @@
+//
+//  TextToSpeechPlayer.swift
+//  RunAndRead
+//
+//  Created by Serge Nes on 1/31/25.
+//
+
 import AVFoundation
 import Combine
 import SwiftUI
