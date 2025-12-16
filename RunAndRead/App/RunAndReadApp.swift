@@ -19,8 +19,6 @@ func askForAppRating() {
 struct RunAndReadApp: App {
     private let bookManager = BookManager()
     private let simplePlayer = SimpleTTSPlayer()
-    private let textToSpeechPlayer = TextToSpeechPlayer()
-    private let audioBookPlayer = AudioBookPlayer()
 
     var body: some Scene {
         WindowGroup {
@@ -28,8 +26,6 @@ struct RunAndReadApp: App {
                 .accentColor(Color("AccentColor"))
                 .environmentObject(bookManager)
                 .environmentObject(simplePlayer)
-                .environmentObject(textToSpeechPlayer)
-                .environmentObject(audioBookPlayer)
                 .onOpenURL(perform: handleOpenFile(_:))
         }
     }
