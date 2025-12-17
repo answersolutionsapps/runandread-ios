@@ -50,3 +50,4 @@ fastlane/test_output
 .swiftpm/
 .swiftlint.yml
 .swiftformat
+/docs/IOS_CODE_REVIEW.md
