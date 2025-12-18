@@ -15,6 +15,10 @@ extension AudioBookPlayer {
 
     func setupRemoteTransportControls() {
         let commandCenter = MPRemoteCommandCenter.shared()
+        
+        // Configure preferred skip intervals (in seconds)
+        commandCenter.skipForwardCommand.preferredIntervals = [15]
+        commandCenter.skipBackwardCommand.preferredIntervals = [15]
 
         // Enable Play/Pause
         commandCenter.playCommand.addTarget { [weak self] _ in
@@ -43,14 +47,16 @@ extension AudioBookPlayer {
     }
 
     func updateNowPlayingInfo() {
-        var nowPlayingInfo = [String: Any]()
-        nowPlayingInfo[MPMediaItemPropertyTitle] = title
-        nowPlayingInfo[MPMediaItemPropertyArtist] = author
-        nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
-        nowPlayingInfo[MPMediaItemPropertySkipCount] = TextToSpeechPlayer.SkipCountSeconds
-        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = totalTime
-
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        var info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+        info[MPMediaItemPropertyTitle] = title
+        info[MPMediaItemPropertyArtist] = author
+        if let artwork = artwork {
+            info[MPMediaItemPropertyArtwork] = artwork
+        }
+        info[MPMediaItemPropertyPlaybackDuration] = totalTime
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = elapsedSeconds
+        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying() ? 1.0 : 0.0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }
 
     func updateProgressNowPlayingInfo(progressValue: TimeInterval) {
@@ -78,7 +84,7 @@ extension AudioBookPlayer {
 
 
 @MainActor
-class AudioBookPlayer: NSObject, AVAudioPlayerDelegate, ObservableObject, Sendable {
+class AudioBookPlayer: NSObject, AVAudioPlayerDelegate, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     private var defaultLanguage = Locale.current
     var speed: Float = 1.0

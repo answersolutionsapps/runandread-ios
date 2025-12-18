@@ -56,10 +56,10 @@ class BookManager: ObservableObject {
         audioLibraryFolderPath = rootDirectory.appendingPathComponent("audiobooks")
 
         if !fileManager.fileExists(atPath: libraryFolderPath.path) {
-            try? fileManager.createDirectory(at: libraryFolderPath, withIntermediateDirectories: true, attributes: nil)
+            _ = FileIO.createDirectoryIfNeeded(at: libraryFolderPath)
         }
         if !fileManager.fileExists(atPath: audioLibraryFolderPath.path) {
-            try? fileManager.createDirectory(at: audioLibraryFolderPath, withIntermediateDirectories: true, attributes: nil)
+            _ = FileIO.createDirectoryIfNeeded(at: audioLibraryFolderPath)
         }
     }
 
@@ -69,7 +69,7 @@ class BookManager: ObservableObject {
             do {
                 if let b = book as? Book {
                     let data = try JSONEncoder().encode(book.id)
-                    try data.write(to: self.currentBookIdPath)
+                    try FileIO.writeAtomic(data: data, to: self.currentBookIdPath)
                     DispatchQueue.main.async {
                         self.currentBookId = b.id
                         self.currentBook = b
@@ -78,7 +78,7 @@ class BookManager: ObservableObject {
                     }
                 } else if let b = book as? AudioBook {
                     let data = try JSONEncoder().encode(b.id)
-                    try data.write(to: self.currentBookIdPath)
+                    try FileIO.writeAtomic(data: data, to: self.currentBookIdPath)
                     DispatchQueue.main.async {
                         self.currentBookId = b.id
                         self.currentBook = b
@@ -87,7 +87,7 @@ class BookManager: ObservableObject {
                     }
                 }
             } catch {
-                print("Error saving current book ID: \(error)")
+                AppLogger.persistence.error("Failed to save current book ID at \(self.currentBookIdPath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 DispatchQueue.main.async {
                     self.inProgress = false
                 }
@@ -112,10 +112,10 @@ class BookManager: ObservableObject {
         DispatchQueue.global(qos: .background).async { [self] in
             do {
                 if fileManager.fileExists(atPath: self.currentBookIdPath.path) {
-                    try fileManager.removeItem(at: currentBookIdPath)
+                    try FileIO.removeItem(at: currentBookIdPath)
                 }
             } catch {
-                print("Error deleting current book ID: \(error)")
+                AppLogger.persistence.error("Failed to delete current book ID at \(self.currentBookIdPath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
             DispatchQueue.main.async {
                 self.currentBook = nil
@@ -134,11 +134,11 @@ class BookManager: ObservableObject {
     private func loadCurrentBookId() -> AnyPublisher<String?, Never> {
         Future { promise in
             do {
-                let data = try Data(contentsOf: self.currentBookIdPath)
+                let data = try FileIO.readData(at: self.currentBookIdPath)
                 let bookId = try JSONDecoder().decode(String?.self, from: data)
                 promise(.success(bookId))
             } catch {
-                print("Error loading current book ID: \(error)")
+                AppLogger.persistence.error("Failed to load current book ID at \(self.currentBookIdPath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 promise(.success(nil))
             }
         }
@@ -152,12 +152,13 @@ class BookManager: ObservableObject {
             let bookFilePath = self.libraryFolderPath.appendingPathComponent("\(book.id).json")
             do {
                 let data = try JSONEncoder().encode(book)
-                try data.write(to: bookFilePath)
+                try FileIO.writeAtomic(data: data, to: bookFilePath)
                 DispatchQueue.main.async {
                     completion(.success(bookFilePath))
                     self.inProgress = false
                 }
             } catch {
+                AppLogger.persistence.error("Failed to save book to library at \(bookFilePath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 DispatchQueue.main.async {
                     completion(.failure(error))
                     self.inProgress = false
@@ -172,7 +173,7 @@ class BookManager: ObservableObject {
             let bookFilePath = self.audioLibraryFolderPath.appendingPathComponent("\(book.id).json")
             do {
                 let data = try JSONEncoder().encode(book)
-                try data.write(to: bookFilePath)
+                try FileIO.writeAtomic(data: data, to: bookFilePath)
                 DispatchQueue.main.async {
                     completion(.success(bookFilePath))
                     self.inProgress = false
@@ -196,7 +197,7 @@ class BookManager: ObservableObject {
             }
             do {
                 if FileManager.default.fileExists(atPath: bookFilePath.path) {
-                    try FileManager.default.removeItem(at: bookFilePath)
+                    try FileIO.removeItem(at: bookFilePath)
                 }
                 //TODO: remove audio file
                 self.deleteCurrentBook {
@@ -206,6 +207,7 @@ class BookManager: ObservableObject {
                     }
                 }
             } catch {
+                AppLogger.persistence.error("Failed to delete book from library at \(bookFilePath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 DispatchQueue.main.async {
                     completion(.failure(error))
                     self.inProgress = false
@@ -223,12 +225,12 @@ class BookManager: ObservableObject {
             do {
                 // Remove the JSON metadata file
                 if fileManager.fileExists(atPath: bookFilePath.path) {
-                    try fileManager.removeItem(at: bookFilePath)
+                    try FileIO.removeItem(at: bookFilePath)
                 }
                 
                 // Remove the audio file
                 if let audioFilePath = book.pathToAudio(), fileManager.fileExists(atPath: audioFilePath.path) {
-                    try fileManager.removeItem(at: audioFilePath)
+                    try FileIO.removeItem(at: audioFilePath)
                 }
                 
                 DispatchQueue.main.async {
@@ -250,22 +252,22 @@ class BookManager: ObservableObject {
             let bookFilePath2 = self.audioLibraryFolderPath.appendingPathComponent("\(id).json")
             if self.fileManager.fileExists(atPath: bookFilePath1.path()) {
                 do {
-                    let data = try Data(contentsOf: bookFilePath1)
+                    let data = try FileIO.readData(at: bookFilePath1)
                     let decoder = JSONDecoder()
                     let book = try decoder.decode(Book.self, from: data)
                     promise(.success(book))
                 } catch {
-                    print("Error loading book: \(error)")
+                    AppLogger.persistence.error("Failed to load text book at \(bookFilePath1.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     promise(.success(nil))
                 }
             } else if self.fileManager.fileExists(atPath: bookFilePath2.path()) {
                 do {
-                    let data = try Data(contentsOf: bookFilePath2)
+                    let data = try FileIO.readData(at: bookFilePath2)
                     let decoder = JSONDecoder()
                     let book = try decoder.decode(AudioBook.self, from: data)
                     promise(.success(book))
                 } catch {
-                    print("Error loading book: \(error)")
+                    AppLogger.persistence.error("Failed to load audio book at \(bookFilePath2.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
                     promise(.success(nil))
                 }
             }
@@ -282,20 +284,32 @@ class BookManager: ObservableObject {
                 var books: [any RunAndReadBook] = []
 
                 for fileURL in file1URLs {
-                    let data = try Data(contentsOf: fileURL)
-                    if let book = try? JSONDecoder().decode(Book.self, from: data) {
-                        books.append(book)
+                    do {
+                        let data = try FileIO.readData(at: fileURL)
+                        if let book = try? JSONDecoder().decode(Book.self, from: data) {
+                            books.append(book)
+                        } else {
+                            AppLogger.persistence.debug("Skipping unreadable text book at \(fileURL.lastPathComponent, privacy: .public)")
+                        }
+                    } catch {
+                        // readData logs already; continue
                     }
                 }
                 for fileURL in file2URLs {
-                    let data = try Data(contentsOf: fileURL)
-                    if let book = try? JSONDecoder().decode(AudioBook.self, from: data) {
-                        books.append(book)
+                    do {
+                        let data = try FileIO.readData(at: fileURL)
+                        if let book = try? JSONDecoder().decode(AudioBook.self, from: data) {
+                            books.append(book)
+                        } else {
+                            AppLogger.persistence.debug("Skipping unreadable audio book at \(fileURL.lastPathComponent, privacy: .public)")
+                        }
+                    } catch {
+                        // readData logs already; continue
                     }
                 }
                 promise(.success(books))
             } catch {
-                print("Error loading library: \(error)")
+                AppLogger.persistence.error("Failed to enumerate library folders: \(error.localizedDescription, privacy: .public)")
                 promise(.success([]))
             }
         }
@@ -304,14 +318,14 @@ class BookManager: ObservableObject {
     }
 
     func addABookmark() {
-        if let book = currentBook {
+        if let book = self.currentBook {
             book.bookmarks.insert(Bookmark(position: book.lastPosition), at: 0)
         }
     }
 
     func updateLastPosition(for bookId: String, newPosition: Int) {
-        currentBook?.lastPosition = newPosition
-        currentBook?.created = Date.now
+        self.currentBook?.lastPosition = newPosition
+        self.currentBook?.created = Date.now
     }
 
     func persist(completion: @escaping (Result<URL, Error>) -> Void) {
@@ -384,18 +398,18 @@ class BookManager: ObservableObject {
                     for fileURL in contents {
                         if fileURL.pathExtension == "json" { // Filter for JSON files
                             do {
-                                let data = try Data(contentsOf: fileURL)
+                                let data = try FileIO.readData(at: fileURL)
                                 if let book = try? JSONDecoder().decode(Book.self, from: data) {
                                     let bookFilePath = self.libraryFolderPath.appendingPathComponent("\(book.id).json")
                                     do {
                                         let data = try JSONEncoder().encode(book)
-                                        try data.write(to: bookFilePath)
+                                        try FileIO.writeAtomic(data: data, to: bookFilePath)
                                     } catch {
-                                        print("Error JSONEncoder file \(fileURL.lastPathComponent): \(error.localizedDescription)")
+                                        AppLogger.persistence.error("Failed to seed default book \(fileURL.lastPathComponent, privacy: .public) to \(bookFilePath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
                                     }
                                 }
                             } catch {
-                                print("Error reading file \(fileURL.lastPathComponent): \(error.localizedDescription)")
+                                AppLogger.persistence.error("Failed to read bundled file \(fileURL.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
                                 DispatchQueue.main.async {
                                     self.inProgress = false
                                 }
