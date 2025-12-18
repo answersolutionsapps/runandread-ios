@@ -17,6 +17,7 @@ class BookPlayerViewModel: ObservableObject {
     @Published var currentFrame: [String] = ["Test 123", "Test 345", "Test 567"]
     @Published var currentWordIndexInFrame = 0
     @Published var isLoading: Bool = true
+    @Published var isPlayingFlag: Bool = false
 
     private var bookManager: BookManager
     private var bookPlayer: BookPlayer?
@@ -126,6 +127,7 @@ class BookPlayerViewModel: ObservableObject {
 
     @MainActor func stopPlayer() {
         self.bookPlayer?.stop()
+        self.isPlayingFlag = false
         self.bookManager.persist { _ in
         }
     }
@@ -170,6 +172,8 @@ class BookPlayerViewModel: ObservableObject {
 
     @MainActor func onPlayPause() {
         bookPlayer?.playPause()
+        // Reflect the latest playing state in a @Published flag so SwiftUI can re-render the play/pause icon
+        self.isPlayingFlag = bookPlayer?.isPlaying() ?? false
     }
 
     @MainActor func onRewind() {
@@ -181,11 +185,11 @@ class BookPlayerViewModel: ObservableObject {
     }
 
     @MainActor func playButtonIconName() -> String {
-        return (bookPlayer?.isPlaying() ?? false) ? "pause.circle.fill" : "play.circle.fill"
+        return isPlayingFlag ? "pause.circle.fill" : "play.circle.fill"
     }
 
     @MainActor func isPlaying() -> Bool {
-        return bookPlayer?.isPlaying() ?? false
+        return isPlayingFlag
     }
     
     @MainActor func generateBookmarks(book: any RunAndReadBook) {
@@ -196,6 +200,7 @@ class BookPlayerViewModel: ObservableObject {
         bookPlayer?.definePosition(value: Int(bookmark.position))
         bookPlayer?.updateProgress()
         bookPlayer?.playPause()
+        self.isPlayingFlag = bookPlayer?.isPlaying() ?? false
     }
     
     private func onFileSelected(fileURL: URL) {
