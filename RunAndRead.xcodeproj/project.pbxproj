@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1E6021812F2D36A300EBFD9C /* RunAnywhere in Frameworks */ = {isa = PBXBuildFile; productRef = 1E6021802F2D36A300EBFD9C /* RunAnywhere */; };
+		1E6021832F2D36A300EBFD9C /* RunAnywhereLlamaCPP in Frameworks */ = {isa = PBXBuildFile; productRef = 1E6021822F2D36A300EBFD9C /* RunAnywhereLlamaCPP */; };
+		1E6021852F2D36A300EBFD9C /* RunAnywhereONNX in Frameworks */ = {isa = PBXBuildFile; productRef = 1E6021842F2D36A300EBFD9C /* RunAnywhereONNX */; };
 		1E623B292D4A899400F1058E /* AEXML in Frameworks */ = {isa = PBXBuildFile; productRef = 1E623B282D4A899400F1058E /* AEXML */; };
 		1E623B2C2D4A89AD00F1058E /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 1E623B2B2D4A89AD00F1058E /* ZIPFoundation */; };
 		1ED28B842D4D3E1900B8C8CF /* EPUBKit in Frameworks */ = {isa = PBXBuildFile; productRef = 1ED28B832D4D3E1900B8C8CF /* EPUBKit */; };
@@ -24,6 +27,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		1E60217D2F2D34C900EBFD9C /* runanywhere-sdks */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "runanywhere-sdks"; path = "../../../projects/runanywhere-sdks"; sourceTree = "<group>"; };
 		1E623ADB2D400F9000F1058E /* RunAndRead.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RunAndRead.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1EF1ECFA2D519CAD00EEA371 /* RunAndReadTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunAndReadTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -60,7 +64,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				1ED28B842D4D3E1900B8C8CF /* EPUBKit in Frameworks */,
+				1E6021852F2D36A300EBFD9C /* RunAnywhereONNX in Frameworks */,
+				1E6021832F2D36A300EBFD9C /* RunAnywhereLlamaCPP in Frameworks */,
 				1ED28B872D4D51DE00B8C8CF /* SwiftSoup in Frameworks */,
+				1E6021812F2D36A300EBFD9C /* RunAnywhere in Frameworks */,
 				1E623B292D4A899400F1058E /* AEXML in Frameworks */,
 				1E623B2C2D4A89AD00F1058E /* ZIPFoundation in Frameworks */,
 			);
@@ -76,11 +83,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1E60217C2F2D34C900EBFD9C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1E60217D2F2D34C900EBFD9C /* runanywhere-sdks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		1E623AD22D400F9000F1058E = {
 			isa = PBXGroup;
 			children = (
 				1E623ADD2D400F9000F1058E /* RunAndRead */,
 				1EF1ECFB2D519CAD00EEA371 /* RunAndReadTests */,
+				1E60217C2F2D34C900EBFD9C /* Frameworks */,
 				1E623ADC2D400F9000F1058E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -118,6 +134,9 @@
 				1E623B2B2D4A89AD00F1058E /* ZIPFoundation */,
 				1ED28B832D4D3E1900B8C8CF /* EPUBKit */,
 				1ED28B862D4D51DE00B8C8CF /* SwiftSoup */,
+				1E6021802F2D36A300EBFD9C /* RunAnywhere */,
+				1E6021822F2D36A300EBFD9C /* RunAnywhereLlamaCPP */,
+				1E6021842F2D36A300EBFD9C /* RunAnywhereONNX */,
 			);
 			productName = RunAndRead;
 			productReference = 1E623ADB2D400F9000F1058E /* RunAndRead.app */;
@@ -179,6 +198,7 @@
 				1E623B2A2D4A89AD00F1058E /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				1ED28B822D4D3E1900B8C8CF /* XCRemoteSwiftPackageReference "EPUBKit" */,
 				1ED28B852D4D51DE00B8C8CF /* XCRemoteSwiftPackageReference "SwiftSoup" */,
+				1E60217F2F2D36A300EBFD9C /* XCLocalSwiftPackageReference "../../../projects/runanywhere-sdks" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1E623ADC2D400F9000F1058E /* Products */;
@@ -375,7 +395,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -412,7 +432,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -497,6 +517,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		1E60217F2F2D36A300EBFD9C /* XCLocalSwiftPackageReference "../../../projects/runanywhere-sdks" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../../projects/runanywhere-sdks";
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		1E623B272D4A899400F1058E /* XCRemoteSwiftPackageReference "AEXML" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -533,6 +560,18 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1E6021802F2D36A300EBFD9C /* RunAnywhere */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RunAnywhere;
+		};
+		1E6021822F2D36A300EBFD9C /* RunAnywhereLlamaCPP */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RunAnywhereLlamaCPP;
+		};
+		1E6021842F2D36A300EBFD9C /* RunAnywhereONNX */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RunAnywhereONNX;
+		};
 		1E623B282D4A899400F1058E /* AEXML */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 1E623B272D4A899400F1058E /* XCRemoteSwiftPackageReference "AEXML" */;
