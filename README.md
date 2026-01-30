@@ -5,7 +5,7 @@
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-supported-blue.svg)](https://developer.apple.com/xcode/swiftui/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Ultimate Text‑to‑Speech and audiobook player for iPhone and iPad — listen to your books while running, exercising, or on the go.
+Text‑to‑Speech and audiobook player for iPhone and iPad — listen to your books while running, exercising, or on the go.
 
 <img src="assets/ic_launcher.png" width="100" height="100" alt="Run & Read app icon">
 
@@ -20,12 +20,12 @@ Run & Read is a distraction‑free Text‑to‑Speech (TTS) and audiobook player
 ## Installation
 
 ### From the App Store
-🍏 **App Store**: [Run & Read for Apple Devices](https://apps.apple.com/us/app/run-read-listen-on-the-go/id6741396289)
+**App Store**: [Run & Read for Apple Devices](https://apps.apple.com/us/app/run-read-listen-on-the-go/id6741396289)
 
 ### From Google Play
-🤖 **Google Play**: [Run & Read for Android](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
+**Google Play**: [Run & Read for Android](https://play.google.com/store/apps/details?id=com.answersolutions.runandread)
 
-📱 **Scan QR codes to download**
+**Scan QR codes to download**
 
 <div align="center">
   <img src="assets/apple_runandread_qr_code.png" width="150" alt="App Store QR code">&nbsp;&nbsp;&nbsp;
@@ -52,10 +52,10 @@ Run & Read is a distraction‑free Text‑to‑Speech (TTS) and audiobook player
 - Control playback from the Player screen; background audio is supported.
 
 ## Features
-- Text‑to‑Speech player using system voices (AVSpeechSynthesizer)
+- Text‑to‑Speech using system voices (AVSpeechSynthesizer)
 - Audiobook playback (.mp3 via RANDR pipeline)
 - Adjustable speed and voice selection
-- Horizontally scrolled text reader
+- Horizontally scrolling text reader
 - Open files from the Files app or share sheet
 - Background audio support
 
@@ -77,7 +77,7 @@ flowchart TD
 ```
 
 
-## 📦 Dependencies
+## Dependencies
 
 Runtime libraries (Swift Package Manager):
 - Zip — https://github.com/marmelroy/Zip — used for working with `.randr` archives and other zip containers.
@@ -98,7 +98,7 @@ Run & Read does not collect analytics or personal data. All processing happens o
 ## Contributing
 Contributions are welcome! Please open an issue to discuss changes or submit a pull request. See coding guidelines in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## 📞 Contact
+## Contact
 - **[Sergey N](https://www.linkedin.com/in/sergey-neskoromny/)**
 
 ## License
