@@ -22,6 +22,7 @@ class BookSettingsViewModel: ObservableObject {
     @Published var selectedPart: Int = 0
     @Published var showLanguagePicker: Bool = false
     @Published var showVoicePicker: Bool = false
+    @Published var selectedTTSEngine: TTSEngineType = .system
     
     func getDefaultVoiceRate() -> Float {
         if (bookManager.currentBook is AudioBook) {
@@ -132,6 +133,7 @@ class BookSettingsViewModel: ObservableObject {
     func loadSelectedVoice() {
         if let book =  bookManager.currentBook as? Book {
             selectedVoice = book.voice
+            selectedTTSEngine = book.ttsEngine
         }
         if let voiceRate = bookManager.currentBook?.voiceRate {
             if (bookManager.currentBook is AudioBook) {
@@ -180,6 +182,7 @@ class BookSettingsViewModel: ObservableObject {
             book.voice = selectedVoice
             book.voiceRate = defaultVoiceRate.playbackRateToSpeed()
             book.text = Array(contextText.suffix(from: safeIndex))
+            book.ttsEngine = selectedTTSEngine
 
             bookManager.saveBookToLibrary(book: book) { result in
                 switch result {
@@ -242,7 +245,8 @@ class BookSettingsViewModel: ObservableObject {
                             "\($0). "
                         }),
                         lastPosition: 0,
-                        bookmarks: []
+                        bookmarks: [],
+                        ttsEngine: selectedTTSEngine
                 )
 
                 bookManager.saveBookToLibrary(book: book) { result in

@@ -75,6 +75,18 @@ struct BookSettingsView: View {
                         Text(viewModel.audioBookLanguage())
                     }
                     Divider()
+                    if (!viewModel.isAudioBook()) {
+                        Text("TTS Engine")
+                            .font(.headline)
+                        Picker("TTS Engine", selection: $viewModel.selectedTTSEngine) {
+                            Text("iOS System").tag(TTSEngineType.system)
+                            Text("RunAnywhere AI").tag(TTSEngineType.runAnywhereAI)
+                        }
+                        .pickerStyle(SegmentedPickerStyle())
+                        .padding(.bottom, 8)
+
+                        Divider()
+                    }
                     HStack {
                         Text("Naration Voice")
                             .font(.headline)
