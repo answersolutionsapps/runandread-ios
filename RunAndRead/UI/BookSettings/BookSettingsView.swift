@@ -101,25 +101,44 @@ struct BookSettingsView: View {
                     VStack(alignment: .center) {
                         SpeechSpeedSelector(defaultSpeed: viewModel.getDefaultVoiceRate()) { newSpeed in
                             print("Selected speed: \(newSpeed)")
-                            
+
                             viewModel.onRateChanges(value: newSpeed)
                         }
                     }
                     .frame(maxWidth: .infinity)
                     if (!viewModel.isAudioBook()) {
-                        Button(action: {
-                            viewModel.onShowVoicePicker()
-                        }, label: {
-                            Text(String(format: "\(viewModel.selectedVoice.name) (%.2f)", viewModel.defaultVoiceRate.playbackRateToSpeed()))
-                                .font(.body)
-                                .padding()
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 5)
-                                        .stroke(Color.gray, lineWidth: 1)
-                                )
-                        })
-                        .sheet(isPresented: $viewModel.showVoicePicker) {
-                            VoicePicker(viewModel: viewModel)
+                        // Show different voice pickers based on TTS engine
+                        if viewModel.selectedTTSEngine == .system {
+                            Button(action: {
+                                viewModel.onShowVoicePicker()
+                            }, label: {
+                                Text(String(format: "\(viewModel.selectedVoice.name) (%.2f)", viewModel.defaultVoiceRate.playbackRateToSpeed()))
+                                    .font(.body)
+                                    .padding()
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .stroke(Color.gray, lineWidth: 1)
+                                    )
+                            })
+                            .sheet(isPresented: $viewModel.showVoicePicker) {
+                                VoicePicker(viewModel: viewModel)
+                            }
+                        } else {
+                            // RunAnywhere AI voice selector
+                            Button(action: {
+                                viewModel.onShowRunAnywhereVoicePicker()
+                            }, label: {
+                                Text(viewModel.selectedRunAnywhereVoiceName)
+                                    .font(.body)
+                                    .padding()
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 5)
+                                            .stroke(Color.gray, lineWidth: 1)
+                                    )
+                            })
+                            .sheet(isPresented: $viewModel.showRunAnywhereVoicePicker) {
+                                RunAnywhereVoicePicker(viewModel: viewModel)
+                            }
                         }
                     } else {
                         Text("Voice Name:\n\(viewModel.audioBookVoice())")

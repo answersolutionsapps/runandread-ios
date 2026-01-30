@@ -166,12 +166,13 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
             Task {
                 await ttsViewModel.initialize()
 
-                // Load a default TTS model if not already loaded
-                if await RunAnywhere.currentTTSVoiceId == nil {
-                    logger.info("Loading default TTS model...")
-                    do {
-                        let modelId = "vits-piper-en_US-lessac-medium"
+                // Use the selected voice from book, or default
+                let modelId = book.runAnywhereVoiceId ?? "vits-piper-en_US-lessac-medium"
 
+                // Load the selected TTS model if not already loaded
+                if await RunAnywhere.currentTTSVoiceId != modelId {
+                    logger.info("Loading TTS model: \(modelId)")
+                    do {
                         // Check if model is downloaded
                         let availableModels = try await RunAnywhere.availableModels()
                         if let model = availableModels.first(where: { $0.id == modelId }) {
@@ -194,7 +195,7 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
 
                             // Now load the model
                             try await RunAnywhere.loadTTSModel(modelId)
-                            logger.info("✅ Default TTS model loaded")
+                            logger.info("✅ TTS model loaded: \(modelId)")
                         }
                     } catch {
                         logger.error("❌ Failed to setup TTS model: \(error.localizedDescription)")
@@ -306,6 +307,8 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
         currentWordIndexInFrame = 0
         let textToSpeak = currentFrame.joined(separator: " ")
 
+        // Use the speed/rate from the book settings
+        ttsViewModel.speechRate = Double(speed)
         await ttsViewModel.speak(text: textToSpeak)
 
         // After speaking completes, move to next frame

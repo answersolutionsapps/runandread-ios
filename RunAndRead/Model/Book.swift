@@ -72,6 +72,7 @@ class Book: RunAndReadBook {
     var created: Date
     var bookmarks: [Bookmark]
     var ttsEngine: TTSEngineType
+    var runAnywhereVoiceId: String? // Voice model ID for RunAnywhere AI TTS
 
     init(
         id: String = UUID().uuidString,
@@ -84,7 +85,8 @@ class Book: RunAndReadBook {
         lastPosition: Int,
         created: Date = Date(),
         bookmarks: [Bookmark],
-        ttsEngine: TTSEngineType = .system
+        ttsEngine: TTSEngineType = .system,
+        runAnywhereVoiceId: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -101,6 +103,7 @@ class Book: RunAndReadBook {
         self.created = created
         self.bookmarks = bookmarks
         self.ttsEngine = ttsEngine
+        self.runAnywhereVoiceId = runAnywhereVoiceId
     }
     
     func hash(into hasher: inout Hasher) {
@@ -109,7 +112,7 @@ class Book: RunAndReadBook {
     
     // MARK: - Codable
     enum CodingKeys: String, CodingKey {
-        case id, title, author, language, voiceIdentifier, voiceRate, text, lastPosition, created, bookmarks, ttsEngine
+        case id, title, author, language, voiceIdentifier, voiceRate, text, lastPosition, created, bookmarks, ttsEngine, runAnywhereVoiceId
     }
     
     required init(from decoder: Decoder) throws {
@@ -139,6 +142,7 @@ class Book: RunAndReadBook {
             bookmarks = []
         }
         ttsEngine = try container.decodeIfPresent(TTSEngineType.self, forKey: .ttsEngine) ?? .system
+        runAnywhereVoiceId = try container.decodeIfPresent(String.self, forKey: .runAnywhereVoiceId)
     }
     
     func encode(to encoder: Encoder) throws {
@@ -155,6 +159,7 @@ class Book: RunAndReadBook {
         try container.encode(created, forKey: .created)
         try container.encode(bookmarks, forKey: .bookmarks)
         try container.encode(ttsEngine, forKey: .ttsEngine)
+        try container.encodeIfPresent(runAnywhereVoiceId, forKey: .runAnywhereVoiceId)
     }
     
     func calculate(completed: @escaping ()->Void) {

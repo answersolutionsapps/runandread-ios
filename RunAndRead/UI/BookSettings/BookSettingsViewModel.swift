@@ -7,6 +7,7 @@
 
 import AVFoundation
 import SwiftUI
+import RunAnywhere
 
 class BookSettingsViewModel: ObservableObject {
     @Binding var path: NavigationPath
@@ -23,6 +24,9 @@ class BookSettingsViewModel: ObservableObject {
     @Published var showLanguagePicker: Bool = false
     @Published var showVoicePicker: Bool = false
     @Published var selectedTTSEngine: TTSEngineType = .system
+    @Published var showRunAnywhereVoicePicker: Bool = false
+    @Published var selectedRunAnywhereVoiceId: String = "vits-piper-en_US-lessac-medium"
+    @Published var selectedRunAnywhereVoiceName: String = "Piper TTS (US English - Medium)"
     
     func getDefaultVoiceRate() -> Float {
         if (bookManager.currentBook is AudioBook) {
@@ -119,6 +123,15 @@ class BookSettingsViewModel: ObservableObject {
         showVoicePicker = true
     }
 
+    @MainActor func onShowRunAnywhereVoicePicker(){
+        showRunAnywhereVoicePicker = true
+    }
+
+    func onSelectRunAnywhereVoice(voiceId: String, voiceName: String) {
+        selectedRunAnywhereVoiceId = voiceId
+        selectedRunAnywhereVoiceName = voiceName
+    }
+
     private var bookManager: BookManager
     private var simplePlayer: SimpleTTSPlayer
     private var audioPlayer: AVAudioPlayer?
@@ -134,6 +147,11 @@ class BookSettingsViewModel: ObservableObject {
         if let book =  bookManager.currentBook as? Book {
             selectedVoice = book.voice
             selectedTTSEngine = book.ttsEngine
+            if let voiceId = book.runAnywhereVoiceId {
+                selectedRunAnywhereVoiceId = voiceId
+                // Try to get the voice name from the model ID
+                selectedRunAnywhereVoiceName = getVoiceNameForId(voiceId)
+            }
         }
         if let voiceRate = bookManager.currentBook?.voiceRate {
             if (bookManager.currentBook is AudioBook) {
@@ -146,6 +164,18 @@ class BookSettingsViewModel: ObservableObject {
         }
         if let language = bookManager.currentBook?.language {
             selectedLanguage = language
+        }
+    }
+
+    private func getVoiceNameForId(_ voiceId: String) -> String {
+        // Map voice IDs to names
+        switch voiceId {
+        case "vits-piper-en_US-lessac-medium":
+            return "Piper TTS (US English - Medium)"
+        case "vits-piper-en_GB-alba-medium":
+            return "Piper TTS (British English)"
+        default:
+            return voiceId
         }
     }
     
@@ -183,6 +213,7 @@ class BookSettingsViewModel: ObservableObject {
             book.voiceRate = defaultVoiceRate.playbackRateToSpeed()
             book.text = Array(contextText.suffix(from: safeIndex))
             book.ttsEngine = selectedTTSEngine
+            book.runAnywhereVoiceId = selectedTTSEngine == .runAnywhereAI ? selectedRunAnywhereVoiceId : nil
 
             bookManager.saveBookToLibrary(book: book) { result in
                 switch result {
@@ -246,7 +277,8 @@ class BookSettingsViewModel: ObservableObject {
                         }),
                         lastPosition: 0,
                         bookmarks: [],
-                        ttsEngine: selectedTTSEngine
+                        ttsEngine: selectedTTSEngine,
+                        runAnywhereVoiceId: selectedTTSEngine == .runAnywhereAI ? selectedRunAnywhereVoiceId : nil
                 )
 
                 bookManager.saveBookToLibrary(book: book) { result in
@@ -329,6 +361,14 @@ class BookSettingsViewModel: ObservableObject {
     //----- Player
 
     func onPlayPauseText() {
+        // Handle RunAnywhere AI TTS test
+        if selectedTTSEngine == .runAnywhereAI {
+            Task {
+                await playTestWithRunAnywhereAI()
+            }
+            return
+        }
+
         if let book =  bookManager.currentBook as? AudioBook, let path = book.pathToAudio() {
             if audioPlayer?.isPlaying == true {
                 audioPlayer?.stop()
@@ -381,6 +421,37 @@ class BookSettingsViewModel: ObservableObject {
     func onPlayPauseText2(rate: Float = 0.5) {
         let text = textPreview.substringTwoSentences()
         simplePlayer.startTextToSpeech(text: text, voice: selectedVoice, rate: rate)
+    }
+
+    private func playTestWithRunAnywhereAI() async {
+        let text = textPreview.substringTwoSentences()
+
+        do {
+            // Check if model is loaded
+            if await RunAnywhere.currentTTSVoiceId != selectedRunAnywhereVoiceId {
+                // Need to load the selected model
+                let availableModels = try await RunAnywhere.availableModels()
+                if let model = availableModels.first(where: { $0.id == selectedRunAnywhereVoiceId }) {
+                    // Check if model needs to be downloaded
+                    if model.localPath == nil {
+                        print("Model not downloaded, cannot test")
+                        return
+                    }
+
+                    // Load the model
+                    try await RunAnywhere.loadTTSModel(selectedRunAnywhereVoiceId)
+                }
+            }
+
+            // Speak the text with selected rate
+            let options = TTSOptions(
+                rate: Float(defaultVoiceRate),
+                pitch: 1.0
+            )
+            _ = try await RunAnywhere.speak(text, options: options)
+        } catch {
+            print("Failed to test RunAnywhere AI voice: \(error.localizedDescription)")
+        }
     }
 
     //---Delete
