@@ -120,6 +120,8 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
 
     private var cancellables = Set<AnyCancellable>()
     private var isInitialized = false
+    private var progressTimer: Timer?
+    private var frameStartTime: Date?
 
     override init() {
         super.init()
@@ -226,6 +228,7 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
         currentWordIndexInFrame = 0
         progressCallback = nil
         onAddBookmarkCallback = nil
+        stopProgressTimer()
 
         Task {
             await ttsViewModel.stopSpeaking()
@@ -238,6 +241,7 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
         state = .idle
         currentFrame.removeAll()
         currentWordIndexInFrame = 0
+        stopProgressTimer()
 
         Task {
             await ttsViewModel.stopSpeaking()
@@ -250,6 +254,7 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
         state = .idle
         currentFrame.removeAll()
         currentWordIndexInFrame = 0
+        stopProgressTimer()
 
         Task {
             await ttsViewModel.stopSpeaking()
@@ -262,6 +267,7 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
                 await ttsViewModel.stopSpeaking()
             }
             state = .pause
+            stopProgressTimer()
         } else {
             state = .playing
             Task {
@@ -287,6 +293,7 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
         }
         currentWordIndex = min(currentWordIndex + RunAnywhereAIPlayer.SkipCountWords, words.count - 1)
         state = .idle
+        stopProgressTimer()
         updateProgress()
     }
 
@@ -296,7 +303,38 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
         }
         currentWordIndex = max(currentWordIndex - RunAnywhereAIPlayer.SkipCountWords, 0)
         state = .idle
+        stopProgressTimer()
         updateProgress()
+    }
+
+    private func startProgressTimer() {
+        stopProgressTimer()
+        frameStartTime = Date()
+        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            Task { @MainActor in
+                self.updateProgressDuringPlayback()
+            }
+        }
+    }
+
+    private func stopProgressTimer() {
+        progressTimer?.invalidate()
+        progressTimer = nil
+        frameStartTime = nil
+    }
+
+    private func updateProgressDuringPlayback() {
+        guard state == .playing, !currentFrame.isEmpty, let startTime = frameStartTime else { return }
+
+        let elapsedInFrame = Date().timeIntervalSince(startTime)
+        let estimatedSecondsPerWord = (Double(currentFrame.joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / (Double(speed) * Double(currentFrame.count))
+        let estimatedWordIndex = min(Int(elapsedInFrame / estimatedSecondsPerWord), currentFrame.count - 1)
+
+        if estimatedWordIndex != currentWordIndexInFrame {
+            currentWordIndexInFrame = estimatedWordIndex
+            updateProgress()
+        }
     }
 
     private func speakCurrentFrame() async {
@@ -307,9 +345,15 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
         currentWordIndexInFrame = 0
         let textToSpeak = currentFrame.joined(separator: " ")
 
+        // Start progress timer to track word-by-word progress
+        startProgressTimer()
+
         // Use the speed/rate from the book settings
         ttsViewModel.speechRate = Double(speed)
         await ttsViewModel.speak(text: textToSpeak)
+
+        // Stop timer after frame completes
+        stopProgressTimer()
 
         // After speaking completes, move to next frame
         if state == .playing && currentWordIndex < words.count - 1 {
