@@ -328,8 +328,14 @@ class RunAnywhereAIPlayer: NSObject, ObservableObject, Sendable {
         guard state == .playing, !currentFrame.isEmpty, let startTime = frameStartTime else { return }
 
         let elapsedInFrame = Date().timeIntervalSince(startTime)
-        let estimatedSecondsPerWord = (Double(currentFrame.joined(separator: " ").count) * Book.SECONDS_PER_CHARACTER) / (Double(speed) * Double(currentFrame.count))
-        let estimatedWordIndex = min(Int(elapsedInFrame / estimatedSecondsPerWord), currentFrame.count - 1)
+
+        // Calculate estimated duration for the entire frame
+        let totalCharactersInFrame = Double(currentFrame.joined(separator: " ").count)
+        let estimatedFrameDuration = (totalCharactersInFrame * Book.SECONDS_PER_CHARACTER) / Double(speed)
+
+        // Calculate progress ratio and estimate word index
+        let progressRatio = elapsedInFrame / estimatedFrameDuration
+        let estimatedWordIndex = min(Int(progressRatio * Double(currentFrame.count)), currentFrame.count - 1)
 
         if estimatedWordIndex != currentWordIndexInFrame {
             currentWordIndexInFrame = estimatedWordIndex
