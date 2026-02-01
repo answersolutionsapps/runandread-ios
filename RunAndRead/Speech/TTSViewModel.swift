@@ -27,6 +27,7 @@ class TTSViewModel: ObservableObject {
     // Voice Settings
     @Published var speechRate: Double = 1.0
     @Published var pitch: Double = 1.0
+    @Published var useSSML: Bool = true
 
     // MARK: - Private Properties
 
@@ -95,7 +96,8 @@ class TTSViewModel: ObservableObject {
         do {
             let options = TTSOptions(
                 rate: Float(speechRate),
-                pitch: Float(pitch)
+                pitch: Float(pitch),
+                useSSML: useSSML
             )
 
             // SDK handles everything - synthesis AND playback
