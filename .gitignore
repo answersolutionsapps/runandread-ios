@@ -52,3 +52,4 @@ fastlane/test_output
 .swiftformat
 /docs/IOS_CODE_REVIEW.md
 pr.md
+post.md
