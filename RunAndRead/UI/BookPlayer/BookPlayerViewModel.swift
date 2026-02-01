@@ -34,33 +34,66 @@ class BookPlayerViewModel: ObservableObject {
         bookManager.loadCurrentBook {
             if let b = self.bookManager.currentBook as? Book {
                 DispatchQueue.main.async {
-                    let tts = TextToSpeechPlayer()
-                    self.bookPlayer = tts
-                    tts.setup(
-                        currentBook: b,
-                        onSetUp: { _, progress, currentWord, frame, indexInFrame in
-                            self.currentDuration = Float(tts.totalWords)
-                            self.currentDurationString = tts.totalTimeString
-                            self.currentFrame = frame
-                            self.currentTimeString = progress
-                            self.currentWordIndexInFrame = indexInFrame
-                            self.currentTime = Float(currentWord)
-                            self.bookManager.updateLastPosition(for: b.id, newPosition: currentWord)
-                            self.isLoading = false
-                        },
-                        progressCallback: { progress, currentWord, frame, indexInFrame in
-                            DispatchQueue.main.async {
+                    // Choose player based on TTS engine
+                    let player: BookPlayer
+                    if b.ttsEngine == .runAnywhereAI {
+                        let aiPlayer = RunAnywhereAIPlayer()
+                        player = aiPlayer
+                        aiPlayer.setup(
+                            currentBook: b,
+                            onSetUp: { _, progress, currentWord, frame, indexInFrame in
+                                self.currentDuration = Float(aiPlayer.totalWords)
+                                self.currentDurationString = aiPlayer.totalTimeString
                                 self.currentFrame = frame
                                 self.currentTimeString = progress
                                 self.currentWordIndexInFrame = indexInFrame
                                 self.currentTime = Float(currentWord)
                                 self.bookManager.updateLastPosition(for: b.id, newPosition: currentWord)
+                                self.isLoading = false
+                            },
+                            progressCallback: { progress, currentWord, frame, indexInFrame in
+                                DispatchQueue.main.async {
+                                    self.currentFrame = frame
+                                    self.currentTimeString = progress
+                                    self.currentWordIndexInFrame = indexInFrame
+                                    self.currentTime = Float(currentWord)
+                                    self.bookManager.updateLastPosition(for: b.id, newPosition: currentWord)
+                                }
+                            },
+                            onAddBookmarkCallback: {
+                                self.bookManager.addABookmark()
                             }
-                        },
-                        onAddBookmarkCallback: {
-                            self.bookManager.addABookmark()
-                        }
-                    )
+                        )
+                    } else {
+                        let tts = TextToSpeechPlayer()
+                        player = tts
+                        tts.setup(
+                            currentBook: b,
+                            onSetUp: { _, progress, currentWord, frame, indexInFrame in
+                                self.currentDuration = Float(tts.totalWords)
+                                self.currentDurationString = tts.totalTimeString
+                                self.currentFrame = frame
+                                self.currentTimeString = progress
+                                self.currentWordIndexInFrame = indexInFrame
+                                self.currentTime = Float(currentWord)
+                                self.bookManager.updateLastPosition(for: b.id, newPosition: currentWord)
+                                self.isLoading = false
+                            },
+                            progressCallback: { progress, currentWord, frame, indexInFrame in
+                                DispatchQueue.main.async {
+                                    self.currentFrame = frame
+                                    self.currentTimeString = progress
+                                    self.currentWordIndexInFrame = indexInFrame
+                                    self.currentTime = Float(currentWord)
+                                    self.bookManager.updateLastPosition(for: b.id, newPosition: currentWord)
+                                }
+                            },
+                            onAddBookmarkCallback: {
+                                self.bookManager.addABookmark()
+                            }
+                        )
+                    }
+                    self.bookPlayer = player
                     self.currentFrame = []
                     self.currentWordIndexInFrame = -1
                 }

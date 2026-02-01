@@ -1,5 +1,5 @@
 {
-  "originHash" : "ddb45988d338fb7c460b17698b6d4365ed0fbc3b36c96e93bc869a63ad0471c9",
+  "originHash" : "38d84db0901eedf1e8bc5cae802a124e90ee965521541fd20397918b872dcc0c",
   "pins" : [
     {
       "identity" : "aexml",
@@ -11,12 +11,84 @@
       }
     },
     {
+      "identity" : "alamofire",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Alamofire/Alamofire.git",
+      "state" : {
+        "revision" : "7be73f6c2b5cd90e40798b06ebd5da8f9f79cf88",
+        "version" : "5.11.0"
+      }
+    },
+    {
+      "identity" : "bitbytedata",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tsolomko/BitByteData",
+      "state" : {
+        "revision" : "cdcdc5177ad536cfb11b95c620f926a81014b7fe",
+        "version" : "2.0.4"
+      }
+    },
+    {
+      "identity" : "devicekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/devicekit/DeviceKit.git",
+      "state" : {
+        "revision" : "581df61650bc457ec00373a592a84be3e7468eb1",
+        "version" : "5.7.0"
+      }
+    },
+    {
       "identity" : "epubkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/witekbobrowski/EPUBKit.git",
       "state" : {
         "revision" : "c8148577adc407ab1d4fcd45ceb58b54fb96b344",
         "version" : "0.4.0"
+      }
+    },
+    {
+      "identity" : "files",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/JohnSundell/Files.git",
+      "state" : {
+        "revision" : "e85f2b4a8dfa0f242889f45236f3867d16e40480",
+        "version" : "4.3.0"
+      }
+    },
+    {
+      "identity" : "sentry-cocoa",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/getsentry/sentry-cocoa",
+      "state" : {
+        "revision" : "16cd512711375fa73f25ae5e373f596bdf4251ae",
+        "version" : "8.58.0"
+      }
+    },
+    {
+      "identity" : "swcompression",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tsolomko/SWCompression.git",
+      "state" : {
+        "revision" : "390e0b0af8dd19a600005a242a89e570ff482e09",
+        "version" : "4.8.6"
+      }
+    },
+    {
+      "identity" : "swift-asn1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-asn1.git",
+      "state" : {
+        "revision" : "810496cf121e525d660cd0ea89a758740476b85f",
+        "version" : "1.5.1"
+      }
+    },
+    {
+      "identity" : "swift-crypto",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-crypto.git",
+      "state" : {
+        "revision" : "95ba0316a9b733e92bb6b071255ff46263bbe7dc",
+        "version" : "3.15.1"
       }
     },
     {

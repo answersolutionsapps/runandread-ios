@@ -51,3 +51,5 @@ fastlane/test_output
 .swiftlint.yml
 .swiftformat
 /docs/IOS_CODE_REVIEW.md
+pr.md
+post.md

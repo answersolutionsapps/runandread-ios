@@ -33,6 +33,11 @@ enum BookPlayerType: String, Codable {
     case audio
 }
 
+enum TTSEngineType: String, Codable {
+    case system        // iOS embedded TTS
+    case runAnywhereAI // RunAnywhereAI SDK
+}
+
 struct TextPart: Codable {
     let start_time_ms: Int
     let end_time_ms: Int?
@@ -47,15 +52,15 @@ struct Bookmark: Codable  {
 
 class Book: RunAndReadBook {
     static let SECONDS_PER_CHARACTER = 0.080
-    
+
     static func == (lhs: Book, rhs: Book) -> Bool {
         lhs.id == rhs.id
     }
-    
+
     func playerType() -> BookPlayerType {
            return .tts
        }
-    
+
     var id: String
     var title: String
     var author: String
@@ -66,6 +71,8 @@ class Book: RunAndReadBook {
     var lastPosition: Int //index in the array of all words
     var created: Date
     var bookmarks: [Bookmark]
+    var ttsEngine: TTSEngineType
+    var runAnywhereVoiceId: String? // Voice model ID for RunAnywhere AI TTS
 
     init(
         id: String = UUID().uuidString,
@@ -77,7 +84,9 @@ class Book: RunAndReadBook {
         text: [String],
         lastPosition: Int,
         created: Date = Date(),
-        bookmarks: [Bookmark]
+        bookmarks: [Bookmark],
+        ttsEngine: TTSEngineType = .system,
+        runAnywhereVoiceId: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -93,6 +102,8 @@ class Book: RunAndReadBook {
         self.lastPosition = lastPosition
         self.created = created
         self.bookmarks = bookmarks
+        self.ttsEngine = ttsEngine
+        self.runAnywhereVoiceId = runAnywhereVoiceId
     }
     
     func hash(into hasher: inout Hasher) {
@@ -101,7 +112,7 @@ class Book: RunAndReadBook {
     
     // MARK: - Codable
     enum CodingKeys: String, CodingKey {
-        case id, title, author, language, voiceIdentifier, voiceRate, text, lastPosition, created, bookmarks
+        case id, title, author, language, voiceIdentifier, voiceRate, text, lastPosition, created, bookmarks, ttsEngine, runAnywhereVoiceId
     }
     
     required init(from decoder: Decoder) throws {
@@ -130,6 +141,8 @@ class Book: RunAndReadBook {
         } catch {
             bookmarks = []
         }
+        ttsEngine = try container.decodeIfPresent(TTSEngineType.self, forKey: .ttsEngine) ?? .system
+        runAnywhereVoiceId = try container.decodeIfPresent(String.self, forKey: .runAnywhereVoiceId)
     }
     
     func encode(to encoder: Encoder) throws {
@@ -145,6 +158,8 @@ class Book: RunAndReadBook {
         try container.encode(lastPosition, forKey: .lastPosition)
         try container.encode(created, forKey: .created)
         try container.encode(bookmarks, forKey: .bookmarks)
+        try container.encode(ttsEngine, forKey: .ttsEngine)
+        try container.encodeIfPresent(runAnywhereVoiceId, forKey: .runAnywhereVoiceId)
     }
     
     func calculate(completed: @escaping ()->Void) {
