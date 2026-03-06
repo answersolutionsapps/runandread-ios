@@ -87,7 +87,8 @@ class Book: RunAndReadBook {
         let fallbackVoice = fallbackLangs.compactMap { AVSpeechSynthesisVoice(language: $0) }.first
         self.voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier ?? "") ??
                      fallbackVoice ??
-                     AVSpeechSynthesisVoice.speechVoices().first!
+                     AVSpeechSynthesisVoice.speechVoices().first ??
+                     AVSpeechSynthesisVoice()
         self.voiceRate = voiceRate
         self.text = text
         self.lastPosition = lastPosition
@@ -119,7 +120,8 @@ class Book: RunAndReadBook {
         let fallbackVoice = fallbackLangs.compactMap { AVSpeechSynthesisVoice(language: $0) }.first
         voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier ?? "") ??
                 fallbackVoice ??
-                AVSpeechSynthesisVoice.speechVoices().first!
+                AVSpeechSynthesisVoice.speechVoices().first ??
+                AVSpeechSynthesisVoice()
         
         voiceRate = try container.decode(Float.self, forKey: .voiceRate)
         text = try container.decode([String].self, forKey: .text)

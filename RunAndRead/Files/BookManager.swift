@@ -131,19 +131,16 @@ class BookManager: ObservableObject {
 
     }
 
-    private func loadCurrentBookId() -> AnyPublisher<String?, Never> {
-        Future { promise in
-            do {
-                let data = try FileIO.readData(at: self.currentBookIdPath)
-                let bookId = try JSONDecoder().decode(String?.self, from: data)
-                promise(.success(bookId))
-            } catch {
-                AppLogger.persistence.error("Failed to load current book ID at \(self.currentBookIdPath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                promise(.success(nil))
-            }
+    // Issue 1 fix: converted from AnyPublisher (subscribed on background thread, data race on cancellables)
+    // to async — runs on the cooperative thread pool, no Combine subscription needed.
+    private func loadCurrentBookId() async -> String? {
+        do {
+            let data = try FileIO.readData(at: currentBookIdPath)
+            return try JSONDecoder().decode(String?.self, from: data)
+        } catch {
+            AppLogger.persistence.error("Failed to load current book ID at \(self.currentBookIdPath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return nil
         }
-                .receive(on: DispatchQueue.main)
-                .eraseToAnyPublisher()
     }
 
     func saveBookToLibrary(book: Book, completion: @escaping (Result<URL, Error>) -> Void) {
@@ -246,75 +243,66 @@ class BookManager: ObservableObject {
         }
     }
 
-    private func loadBookFromLibrary(id: String) -> AnyPublisher<(any RunAndReadBook)?, Never> {
-        Future { promise in
-            let bookFilePath1 = self.libraryFolderPath.appendingPathComponent("\(id).json")
-            let bookFilePath2 = self.audioLibraryFolderPath.appendingPathComponent("\(id).json")
-            if self.fileManager.fileExists(atPath: bookFilePath1.path()) {
-                do {
-                    let data = try FileIO.readData(at: bookFilePath1)
-                    let decoder = JSONDecoder()
-                    let book = try decoder.decode(Book.self, from: data)
-                    promise(.success(book))
-                } catch {
-                    AppLogger.persistence.error("Failed to load text book at \(bookFilePath1.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                    promise(.success(nil))
-                }
-            } else if self.fileManager.fileExists(atPath: bookFilePath2.path()) {
-                do {
-                    let data = try FileIO.readData(at: bookFilePath2)
-                    let decoder = JSONDecoder()
-                    let book = try decoder.decode(AudioBook.self, from: data)
-                    promise(.success(book))
-                } catch {
-                    AppLogger.persistence.error("Failed to load audio book at \(bookFilePath2.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                    promise(.success(nil))
-                }
+    // Issue 1 fix: converted from AnyPublisher to async.
+    private func loadBookFromLibrary(id: String) async -> (any RunAndReadBook)? {
+        let bookFilePath1 = libraryFolderPath.appendingPathComponent("\(id).json")
+        let bookFilePath2 = audioLibraryFolderPath.appendingPathComponent("\(id).json")
+        if fileManager.fileExists(atPath: bookFilePath1.path()) {
+            do {
+                let data = try FileIO.readData(at: bookFilePath1)
+                return try JSONDecoder().decode(Book.self, from: data)
+            } catch {
+                AppLogger.persistence.error("Failed to load text book at \(bookFilePath1.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                return nil
+            }
+        } else if fileManager.fileExists(atPath: bookFilePath2.path()) {
+            do {
+                let data = try FileIO.readData(at: bookFilePath2)
+                return try JSONDecoder().decode(AudioBook.self, from: data)
+            } catch {
+                AppLogger.persistence.error("Failed to load audio book at \(bookFilePath2.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                return nil
             }
         }
-                .receive(on: DispatchQueue.main)
-                .eraseToAnyPublisher()
+        return nil
     }
 
-    private func loadLibrary() -> AnyPublisher<[any RunAndReadBook], Never> {
-        Future { promise in
-            do {
-                let file1URLs = try self.fileManager.contentsOfDirectory(at: self.libraryFolderPath, includingPropertiesForKeys: nil)
-                let file2URLs = try self.fileManager.contentsOfDirectory(at: self.audioLibraryFolderPath, includingPropertiesForKeys: nil)
-                var books: [any RunAndReadBook] = []
+    // Issue 1 fix: converted from AnyPublisher to async.
+    private func loadLibrary() async -> [any RunAndReadBook] {
+        do {
+            let file1URLs = try fileManager.contentsOfDirectory(at: libraryFolderPath, includingPropertiesForKeys: nil)
+            let file2URLs = try fileManager.contentsOfDirectory(at: audioLibraryFolderPath, includingPropertiesForKeys: nil)
+            var books: [any RunAndReadBook] = []
 
-                for fileURL in file1URLs {
-                    do {
-                        let data = try FileIO.readData(at: fileURL)
-                        if let book = try? JSONDecoder().decode(Book.self, from: data) {
-                            books.append(book)
-                        } else {
-                            AppLogger.persistence.debug("Skipping unreadable text book at \(fileURL.lastPathComponent, privacy: .public)")
-                        }
-                    } catch {
-                        // readData logs already; continue
+            for fileURL in file1URLs {
+                do {
+                    let data = try FileIO.readData(at: fileURL)
+                    if let book = try? JSONDecoder().decode(Book.self, from: data) {
+                        books.append(book)
+                    } else {
+                        AppLogger.persistence.debug("Skipping unreadable text book at \(fileURL.lastPathComponent, privacy: .public)")
                     }
+                } catch {
+                    // readData logs already; continue
                 }
-                for fileURL in file2URLs {
-                    do {
-                        let data = try FileIO.readData(at: fileURL)
-                        if let book = try? JSONDecoder().decode(AudioBook.self, from: data) {
-                            books.append(book)
-                        } else {
-                            AppLogger.persistence.debug("Skipping unreadable audio book at \(fileURL.lastPathComponent, privacy: .public)")
-                        }
-                    } catch {
-                        // readData logs already; continue
-                    }
-                }
-                promise(.success(books))
-            } catch {
-                AppLogger.persistence.error("Failed to enumerate library folders: \(error.localizedDescription, privacy: .public)")
-                promise(.success([]))
             }
+            for fileURL in file2URLs {
+                do {
+                    let data = try FileIO.readData(at: fileURL)
+                    if let book = try? JSONDecoder().decode(AudioBook.self, from: data) {
+                        books.append(book)
+                    } else {
+                        AppLogger.persistence.debug("Skipping unreadable audio book at \(fileURL.lastPathComponent, privacy: .public)")
+                    }
+                } catch {
+                    // readData logs already; continue
+                }
+            }
+            return books
+        } catch {
+            AppLogger.persistence.error("Failed to enumerate library folders: \(error.localizedDescription, privacy: .public)")
+            return []
         }
-                .receive(on: DispatchQueue.main)
-                .eraseToAnyPublisher()
     }
 
     func addABookmark() {
@@ -361,140 +349,119 @@ class BookManager: ObservableObject {
         }
     }
 
-    private var cancellables = Set<AnyCancellable>()
+    // Issue 1 fix: cancellables removed — all five methods below now use Task.detached
+    // so nothing is ever stored in a shared Set from a background thread.
 
     func loadBooks(onLoaded: @escaping () -> Void) {
         inProgress = true
-        self.library.removeAll()
-        DispatchQueue.global(qos: .background).async {
-            self.loadLibrary()
-                    .sink { books in
-                        DispatchQueue.main.async {
-                            self.library = books.sorted(by: { $0.created > $1.created })
-                            if self.library.isEmpty {
-                                self.loadDefaultLibrary(onLoaded: onLoaded)
-                            } else {
-                                self.inProgress = false
-                                onLoaded()
-                            }
-                        }
-                    }
-                    .store(in: &self.cancellables)
-        }
-    }
-
-    func loadDefaultLibrary(onLoaded: @escaping () -> Void) {
-        self.libraryDefault.removeAll()
-        DispatchQueue.global(qos: .background).async {
-            let fileManager = FileManager.default
-
-            // Get the URL of the root resource folder in the app bundle
-            if let folderURL = Bundle.main.resourceURL {
-                do {
-                    // List the contents of the folder
-                    let contents = try fileManager.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
-
-                    // Process each file
-                    for fileURL in contents {
-                        if fileURL.pathExtension == "json" { // Filter for JSON files
-                            do {
-                                let data = try FileIO.readData(at: fileURL)
-                                if let book = try? JSONDecoder().decode(Book.self, from: data) {
-                                    let bookFilePath = self.libraryFolderPath.appendingPathComponent("\(book.id).json")
-                                    do {
-                                        let data = try JSONEncoder().encode(book)
-                                        try FileIO.writeAtomic(data: data, to: bookFilePath)
-                                    } catch {
-                                        AppLogger.persistence.error("Failed to seed default book \(fileURL.lastPathComponent, privacy: .public) to \(bookFilePath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                                    }
-                                }
-                            } catch {
-                                AppLogger.persistence.error("Failed to read bundled file \(fileURL.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                                DispatchQueue.main.async {
-                                    self.inProgress = false
-                                }
-                            }
-                        }
-                    }
-                    self.loadLibrary()
-                            .sink { books in
-                                DispatchQueue.main.async {
-                                    self.library = books.sorted(by: { $0.created > $1.created })
-                                    self.inProgress = false
-                                    onLoaded()
-                                }
-                            }
-                            .store(in: &self.cancellables)
-                } catch {
-                    print("Error reading directory: \(error.localizedDescription)")
-                    DispatchQueue.main.async {
-                        self.inProgress = false
-                    }
-                }
-            } else {
-                print("Folder not found in the app bundle.")
-                DispatchQueue.main.async {
+        library.removeAll()
+        Task.detached(priority: .background) { [weak self] in
+            guard let self else { return }
+            let books = await self.loadLibrary()
+            await MainActor.run {
+                self.library = books.sorted(by: { $0.created > $1.created })
+                if self.library.isEmpty {
+                    self.loadDefaultLibrary(onLoaded: onLoaded)
+                } else {
                     self.inProgress = false
+                    onLoaded()
                 }
             }
         }
     }
 
+    func loadDefaultLibrary(onLoaded: @escaping () -> Void) {
+        libraryDefault.removeAll()
+        Task.detached(priority: .background) { [weak self] in
+            guard let self else { return }
+            let fileManager = FileManager.default
 
-    func loadCurrentBook(onLoaded: @escaping () -> Void) {
-        inProgress = true
-        DispatchQueue.global(qos: .background).async {
-            self.loadCurrentBookId()
-                    .sink { bookId in
+            guard let folderURL = Bundle.main.resourceURL else {
+                AppLogger.persistence.error("Bundle resource URL not found")
+                await MainActor.run { self.inProgress = false }
+                return
+            }
 
-                        if let testBookId = bookId {
-                            self.loadBookFromLibrary(id: testBookId).sink { book in
-                                        DispatchQueue.main.async {
-                                            self.audioPath = nil
-                                            self.currentBookId = bookId
-                                            self.currentBook = book
-                                            onLoaded()
-                                            self.inProgress = false
-
-                                        }
-                                    }
-                                    .store(in: &self.cancellables)
+            do {
+                let contents = try fileManager.contentsOfDirectory(at: folderURL, includingPropertiesForKeys: nil)
+                for fileURL in contents {
+                    if fileURL.pathExtension == "json" {
+                        do {
+                            let data = try FileIO.readData(at: fileURL)
+                            if let book = try? JSONDecoder().decode(Book.self, from: data) {
+                                let bookFilePath = self.libraryFolderPath.appendingPathComponent("\(book.id).json")
+                                do {
+                                    let bookData = try JSONEncoder().encode(book)
+                                    try FileIO.writeAtomic(data: bookData, to: bookFilePath)
+                                } catch {
+                                    AppLogger.persistence.error("Failed to seed default book \(fileURL.lastPathComponent, privacy: .public) to \(bookFilePath.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                                }
+                            }
+                        } catch {
+                            AppLogger.persistence.error("Failed to read bundled file \(fileURL.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                            await MainActor.run { self.inProgress = false }
                         }
                     }
-                    .store(in: &self.cancellables)
+                }
+                let books = await self.loadLibrary()
+                await MainActor.run {
+                    self.library = books.sorted(by: { $0.created > $1.created })
+                    self.inProgress = false
+                    onLoaded()
+                }
+            } catch {
+                AppLogger.persistence.error("Failed to enumerate bundle directory: \(error.localizedDescription, privacy: .public)")
+                await MainActor.run { self.inProgress = false }
+            }
+        }
+    }
+
+    // Issue 1 fix: no more nested Combine sinks from background thread.
+    // Issue 2 fix: onLoaded() is now always called regardless of whether a saved book ID exists.
+    func loadCurrentBook(onLoaded: @escaping () -> Void) {
+        inProgress = true
+        Task.detached(priority: .background) { [weak self] in
+            guard let self else { return }
+            let bookId = await self.loadCurrentBookId()
+            let book: (any RunAndReadBook)? = if let id = bookId {
+                await self.loadBookFromLibrary(id: id)
+            } else {
+                nil
+            }
+            await MainActor.run {
+                self.audioPath = nil
+                self.currentBookId = bookId
+                self.currentBook = book
+                onLoaded()
+                self.inProgress = false
+            }
         }
     }
 
     func loadText(from fileURL: URL, onLoaded: @escaping (BookFile?, String?) -> Void) {
-        DispatchQueue.global(qos: .background).async {
-            FileTextExtractor.extractText(from: fileURL)
-                    .receive(on: DispatchQueue.main)
-                    .sink(receiveCompletion: { completion in
-                        if case .failure(let error) = completion {
-                            print("Error extracting text: \(error)")
-                            onLoaded(nil, "Error extracting text: \(error)") // Pass nil to signal failure
-                        }
-                    }, receiveValue: { bookFile in
-                        onLoaded(bookFile, nil)
-                    })
-                    .store(in: &self.cancellables)
+        Task.detached(priority: .userInitiated) {
+            do {
+                let bookFile = try await FileTextExtractor.extractText(from: fileURL)
+                await MainActor.run { onLoaded(bookFile, nil) }
+            } catch {
+                let message = "Error extracting text: \(error)"
+                print(message)
+                await MainActor.run { onLoaded(nil, message) }
+            }
         }
     }
 
     func loadText2(from fileURL: URL, onLoaded: @escaping (BookFile?, String?) -> Void) {
         inProgress = true
-        DispatchQueue.global(qos: .background).async {
-            FileTextExtractor.extractTextFromWeb(from: fileURL)
-                .receive(on: DispatchQueue.main)
-                .sink(receiveCompletion: { completion in
-                    if case .failure(let error) = completion {
-                        print("Error extracting text: \(error)")
-                        onLoaded(nil, "Error extracting text: \(error)") // Pass nil to signal failure
-                    }
-                }, receiveValue: { bookFile in
-                    onLoaded(bookFile, nil)
-                })
-                .store(in: &self.cancellables)
+        Task.detached(priority: .userInitiated) {
+            do {
+                let bookFile = try await FileTextExtractor.extractTextFromWeb(from: fileURL)
+                await MainActor.run { onLoaded(bookFile, nil) }
+            } catch {
+                let message = "Error extracting text: \(error)"
+                print(message)
+                await MainActor.run { onLoaded(nil, message) }
+            }
         }
     }
 }
