@@ -1,9 +1,9 @@
-# RunAndRead iOS | [[Android]](https://github.com/answersolutionsapps/runandread-android) | [[Audiobook Pipeline]](https://github.com/sergenes/runandread-audiobook)
-
 [![Platform iOS](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS-lightgrey.svg)](https://developer.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.9+-F05138.svg)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-supported-blue.svg)](https://developer.apple.com/xcode/swiftui/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**Related Projects:** [Run&Read Studio](https://github.com/sergenes/runandread-studio) | [Android Version](https://github.com/answersolutionsapps/runandread-android) | [Audiobook Pipeline](https://github.com/sergenes/runandread-audiobook)
 
 Text‑to‑Speech and audiobook player for iPhone and iPad — listen to your books while running, exercising, or on the go.
 
